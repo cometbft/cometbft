@@ -146,7 +146,7 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 
 	txs := blockExec.mempool.ReapMaxBytesMaxGas(maxReapBytes, maxGas)
 	commit := lastExtCommit.ToCommit()
-	block, err := state.MakeBlock(height, txs, commit, evidence, proposerAddr)
+	timestamp, err := state.proposalBlockTime(height, commit)
 	if err != nil {
 		return nil, err
 	}
@@ -154,13 +154,13 @@ func (blockExec *BlockExecutor) CreateProposalBlock(
 		ctx,
 		&abci.RequestPrepareProposal{
 			MaxTxBytes:         maxDataBytes,
-			Txs:                block.Txs.ToSliceOfBytes(),
+			Txs:                txs.ToSliceOfBytes(),
 			LocalLastCommit:    blockExec.buildExtendedCommitInfo(lastExtCommit, state.InitialHeight, state.ConsensusParams.ABCI),
-			Misbehavior:        block.Evidence.Evidence.ToABCI(),
-			Height:             block.Height,
-			Time:               block.Time,
-			NextValidatorsHash: block.NextValidatorsHash,
-			ProposerAddress:    block.ProposerAddress,
+			Misbehavior:        types.EvidenceList(evidence).ToABCI(),
+			Height:             height,
+			Time:               timestamp,
+			NextValidatorsHash: state.NextValidators.Hash(),
+			ProposerAddress:    proposerAddr,
 		},
 	)
 	if err != nil {

@@ -775,9 +775,6 @@ func TestPrepareProposalTxsAllIncluded(t *testing.T) {
 	mp.On("ReapMaxBytesMaxGas", mock.Anything, mock.Anything).Return(txs[2:])
 
 	app := &abcimocks.Application{}
-	app.On("PrepareProposal", mock.Anything, mock.Anything).Return(&abci.ResponsePrepareProposal{
-		Txs: txs.ToSliceOfBytes(),
-	}, nil)
 	cc := proxy.NewLocalClientCreator(app)
 	proxyApp := proxy.NewAppConns(cc, proxy.NopMetrics())
 	err := proxyApp.Start()
@@ -796,6 +793,18 @@ func TestPrepareProposalTxsAllIncluded(t *testing.T) {
 	pa, _ := state.Validators.GetByIndex(0)
 	commit, _, err := makeValidCommit(height, types.BlockID{}, state.Validators, privVals)
 	require.NoError(t, err)
+	expectedTime, err := sm.MedianTime(commit.ToCommit(), state.LastValidators)
+	require.NoError(t, err)
+	app.On("PrepareProposal", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		req := args.Get(1).(*abci.RequestPrepareProposal)
+		assert.Equal(t, txs[2:].ToSliceOfBytes(), req.Txs)
+		assert.Equal(t, int64(height), req.Height)
+		assert.Equal(t, expectedTime, req.Time)
+		assert.Equal(t, state.NextValidators.Hash(), req.NextValidatorsHash)
+		assert.Equal(t, pa, req.ProposerAddress)
+	}).Return(&abci.ResponsePrepareProposal{
+		Txs: txs.ToSliceOfBytes(),
+	}, nil)
 	block, err := blockExec.CreateProposalBlock(ctx, height, state, commit, pa)
 	require.NoError(t, err)
 

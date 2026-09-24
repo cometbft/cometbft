@@ -189,6 +189,24 @@ func (b *EventBus) PublishEventTx(data EventDataTx) error {
 	return b.pubsub.PublishWithEvents(ctx, data, events)
 }
 
+// PublishEventMempoolTx publishes a MempoolTx event with events from the
+// CheckTx response, fired when a tx is admitted into the mempool (i.e.
+// passes CheckTx for the first time), before it is included in a block.
+// Note it will add predefined keys (EventTypeKey, TxHashKey). Existing
+// events with the same keys will be overwritten.
+func (b *EventBus) PublishEventMempoolTx(data EventDataMempoolTx) error {
+	// no explicit deadline for publishing events
+	ctx := context.Background()
+
+	events := b.validateAndStringifyEvents(data.Result.Events)
+
+	// add predefined compositeKeys
+	events[EventTypeKey] = append(events[EventTypeKey], EventMempoolTx)
+	events[TxHashKey] = append(events[TxHashKey], fmt.Sprintf("%X", data.Tx.Hash()))
+
+	return b.pubsub.PublishWithEvents(ctx, data, events)
+}
+
 func (b *EventBus) PublishEventNewRoundStep(data EventDataRoundState) error {
 	return b.Publish(EventNewRoundStep, data)
 }
@@ -270,6 +288,10 @@ func (NopEventBus) PublishEventVote(EventDataVote) error {
 }
 
 func (NopEventBus) PublishEventTx(EventDataTx) error {
+	return nil
+}
+
+func (NopEventBus) PublishEventMempoolTx(EventDataMempoolTx) error {
 	return nil
 }
 

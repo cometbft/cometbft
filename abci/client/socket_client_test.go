@@ -74,6 +74,14 @@ func TestHangingAsyncCalls(t *testing.T) {
 	}
 }
 
+func TestSocketClientRejectsRequestsAfterStop(t *testing.T) {
+	_, c := setupClientServer(t, types.BaseApplication{})
+	require.NoError(t, c.Stop())
+
+	_, err := c.CheckTxAsync(context.Background(), &types.RequestCheckTx{})
+	require.ErrorIs(t, err, abcicli.ErrClientStopped)
+}
+
 func TestBulk(t *testing.T) {
 	const numTxs = 700000
 	// use a socket instead of a port
@@ -173,6 +181,45 @@ type slowApp struct {
 func (slowApp) CheckTx(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
 	time.Sleep(time.Second)
 	return &types.ResponseCheckTx{}, nil
+}
+
+type blockingCheckTxApp struct {
+	types.BaseApplication
+	started chan struct{}
+	release chan struct{}
+}
+
+func (app *blockingCheckTxApp) CheckTx(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+	close(app.started)
+	<-app.release
+	return &types.ResponseCheckTx{}, nil
+}
+
+func TestSocketClientStopFailsInFlightCheckTx(t *testing.T) {
+	app := &blockingCheckTxApp{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+	_, cli := setupClientServer(t, app)
+	t.Cleanup(func() { close(app.release) })
+
+	type result struct {
+		response *types.ResponseCheckTx
+		err      error
+	}
+	resultCh := make(chan result, 1)
+	go func() {
+		response, err := cli.CheckTx(t.Context(), &types.RequestCheckTx{})
+		resultCh <- result{response: response, err: err}
+	}()
+
+	<-app.started
+	require.NoError(t, cli.Stop())
+
+	got := <-resultCh
+	require.Nil(t, got.response)
+	require.ErrorIs(t, got.err, abcicli.ErrClientStopped)
+	require.NoError(t, cli.Error())
 }
 
 // TestCallbackInvokedWhenSetLate ensures that the callback is invoked when

@@ -199,6 +199,7 @@ func (cli *socketClient) trackRequest(reqres *ReqRes) bool {
 	cli.mtx.Lock()
 	defer cli.mtx.Unlock()
 	if !cli.IsRunning() {
+		reqres.setError(ErrClientStopped)
 		return false
 	}
 	cli.reqSent.PushBack(reqres)
@@ -249,7 +250,10 @@ func (cli *socketClient) Flush(ctx context.Context) error {
 		return err
 	}
 	reqRes.Wait()
-	return nil
+	if err := reqRes.Error(); err != nil {
+		return err
+	}
+	return cli.Error()
 }
 
 func (cli *socketClient) Echo(ctx context.Context, msg string) (*types.ResponseEcho, error) {
@@ -455,6 +459,7 @@ func (cli *socketClient) queueRequest(ctx context.Context, req *types.Request) (
 	}
 
 	if !cli.IsRunning() {
+		reqres.setError(ErrClientStopped)
 		reqres.Done()
 		return nil, ErrClientStopped
 	}
@@ -475,11 +480,16 @@ func (cli *socketClient) queueRequest(ctx context.Context, req *types.Request) (
 func (cli *socketClient) flushQueue() {
 	cli.mtx.Lock()
 	defer cli.mtx.Unlock()
+	err := cli.err
+	if err == nil {
+		err = ErrClientStopped
+	}
 
-	// mark all in-flight messages as resolved (they will get cli.Error())
+	// Mark all in-flight messages as resolved with the error that stopped them.
 	for req := cli.reqSent.Front(); req != nil; {
 		next := req.Next()
 		reqres := req.Value.(*ReqRes)
+		reqres.setError(err)
 		reqres.Done()
 		cli.reqSent.Remove(req)
 		req = next
@@ -490,6 +500,7 @@ LOOP:
 	for {
 		select {
 		case reqres := <-cli.reqQueue:
+			reqres.setError(err)
 			reqres.Done()
 		default:
 			break LOOP

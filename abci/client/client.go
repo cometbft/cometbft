@@ -64,6 +64,7 @@ type ReqRes struct {
 	*types.Request
 	*sync.WaitGroup
 	*types.Response // Not set atomically, so be sure to use WaitGroup.
+	err             error
 
 	mtx cmtsync.Mutex
 
@@ -80,6 +81,16 @@ type ReqRes struct {
 // Done marks the request as complete.
 func (r *ReqRes) Done() {
 	r.doneOnce.Do(r.WaitGroup.Done)
+}
+
+// Error returns the terminal error for this request. It is safe to call after
+// Wait returns.
+func (r *ReqRes) Error() error {
+	return r.err
+}
+
+func (r *ReqRes) setError(err error) {
+	r.err = err
 }
 
 func NewReqRes(req *types.Request) *ReqRes {

@@ -183,6 +183,45 @@ func (slowApp) CheckTx(context.Context, *types.RequestCheckTx) (*types.ResponseC
 	return &types.ResponseCheckTx{}, nil
 }
 
+type blockingCheckTxApp struct {
+	types.BaseApplication
+	started chan struct{}
+	release chan struct{}
+}
+
+func (app *blockingCheckTxApp) CheckTx(context.Context, *types.RequestCheckTx) (*types.ResponseCheckTx, error) {
+	close(app.started)
+	<-app.release
+	return &types.ResponseCheckTx{}, nil
+}
+
+func TestSocketClientStopFailsInFlightCheckTx(t *testing.T) {
+	app := &blockingCheckTxApp{
+		started: make(chan struct{}),
+		release: make(chan struct{}),
+	}
+	_, cli := setupClientServer(t, app)
+	t.Cleanup(func() { close(app.release) })
+
+	type result struct {
+		response *types.ResponseCheckTx
+		err      error
+	}
+	resultCh := make(chan result, 1)
+	go func() {
+		response, err := cli.CheckTx(t.Context(), &types.RequestCheckTx{})
+		resultCh <- result{response: response, err: err}
+	}()
+
+	<-app.started
+	require.NoError(t, cli.Stop())
+
+	got := <-resultCh
+	require.Nil(t, got.response)
+	require.ErrorIs(t, got.err, abcicli.ErrClientStopped)
+	require.NoError(t, cli.Error())
+}
+
 // TestCallbackInvokedWhenSetLate ensures that the callback is invoked when
 // set after the client completes the call into the app. Currently this
 // test relies on the callback being allowed to be invoked twice if set multiple

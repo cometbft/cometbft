@@ -284,8 +284,14 @@ func MedianTime(commit *types.Commit, validators *types.ValidatorSet) (time.Time
 		if commitSig.BlockIDFlag != types.BlockIDFlagCommit {
 			continue
 		}
-		_, validator := validators.GetByAddress(commitSig.ValidatorAddress)
-		// If there's no condition, TestValidateBlockCommit panics; not needed normally.
+
+		var validator *types.Validator
+		if i < len(validators.Validators) &&
+			bytes.Equal(commitSig.ValidatorAddress, validators.Validators[i].Address) {
+			validator = validators.Validators[i]
+		} else {
+			_, validator = validators.GetByAddress(commitSig.ValidatorAddress)
+		}
 		if validator == nil {
 			return time.Time{}, fmt.Errorf("commit validator not found in validator set: %X",
 				commitSig.ValidatorAddress)

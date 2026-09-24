@@ -71,7 +71,7 @@ func (p testPeer) simulateInput(input inputData) {
 	// peer can also finish an in-flight response after validation has removed
 	// and banned it. Neither case should stop this simulated peer.
 	if err != nil && !errors.Is(err, ErrAlreadyCommittedBlock) &&
-		!(p.malicious && input.pool.IsPeerBanned(p.id) && errors.Is(err, ErrUnexpectedBlockResponse)) {
+		(!p.malicious || !input.pool.IsPeerBanned(p.id) || !errors.Is(err, ErrUnexpectedBlockResponse)) {
 		require.NoError(input.t, err)
 	}
 	// TODO: uncommenting this creates a race which is detected by:

@@ -205,6 +205,9 @@ func (sl *SignerListenerEndpoint) serviceLoop() {
 			select {
 			case sl.connectionAvailableCh <- conn:
 			case <-sl.Quit():
+				// Nobody consumed the connection before shutdown, so nothing else
+				// holds a reference to it: close it here or it leaks.
+				_ = conn.Close()
 				return
 			}
 		case <-sl.Quit():

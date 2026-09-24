@@ -1,6 +1,7 @@
 package evidence_test
 
 import (
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -214,6 +215,97 @@ func TestEvidencePoolUpdate(t *testing.T) {
 	err = pool.CheckEvidence(types.EvidenceList{ev})
 	if assert.Error(t, err) {
 		assert.Equal(t, "evidence was already committed", err.(*types.ErrInvalidEvidence).Reason.Error())
+	}
+}
+
+// committedWriteFailingDB simulates a disk error that hits the write of the
+// committed-evidence marker (keys with the 0x00 prefix), whether it is done
+// directly or through a batch.
+type committedWriteFailingDB struct {
+	dbm.DB
+	failBatchWrite bool
+}
+
+func isCommittedKey(key []byte) bool { return len(key) > 0 && key[0] == 0x00 }
+
+func (d committedWriteFailingDB) Set(key, value []byte) error {
+	if isCommittedKey(key) {
+		return errors.New("simulated write failure")
+	}
+	return d.DB.Set(key, value)
+}
+
+func (d committedWriteFailingDB) SetSync(key, value []byte) error {
+	if isCommittedKey(key) {
+		return errors.New("simulated write failure")
+	}
+	return d.DB.SetSync(key, value)
+}
+
+func (d committedWriteFailingDB) NewBatch() dbm.Batch {
+	return committedWriteFailingBatch{Batch: d.DB.NewBatch(), failWrite: d.failBatchWrite}
+}
+
+type committedWriteFailingBatch struct {
+	dbm.Batch
+	failWrite bool
+}
+
+func (b committedWriteFailingBatch) Set(key, value []byte) error {
+	if !b.failWrite && isCommittedKey(key) {
+		return errors.New("simulated write failure")
+	}
+	return b.Batch.Set(key, value)
+}
+
+func (b committedWriteFailingBatch) Write() error {
+	if b.failWrite {
+		return errors.New("simulated write failure")
+	}
+	return b.Batch.Write()
+}
+
+func (b committedWriteFailingBatch) WriteSync() error {
+	if b.failWrite {
+		return errors.New("simulated write failure")
+	}
+	return b.Batch.WriteSync()
+}
+
+func TestEvidencePoolUpdateKeepsEvidencePendingOnWriteFailure(t *testing.T) {
+	for name, failBatchWrite := range map[string]bool{"set fails": false, "batch write fails": true} {
+		t.Run(name, func(t *testing.T) {
+			height := int64(21)
+			val := types.NewMockPV()
+			stateStore := initializeValidatorState(val, height)
+			state, err := stateStore.Load()
+			require.NoError(t, err)
+			blockStore, err := initializeBlockStore(dbm.NewMemDB(), state, val.PrivKey.PubKey().Address())
+			require.NoError(t, err)
+
+			evidenceDB := committedWriteFailingDB{DB: dbm.NewMemDB(), failBatchWrite: failBatchWrite}
+			pool, err := evidence.NewPool(evidenceDB, stateStore, blockStore)
+			require.NoError(t, err)
+			pool.SetLogger(log.TestingLogger())
+
+			ev, err := types.NewMockDuplicateVoteEvidenceWithValidator(height,
+				defaultEvidenceTime.Add(21*time.Minute), val, evidenceChainID)
+			require.NoError(t, err)
+			require.NoError(t, pool.AddEvidence(ev))
+
+			state.LastBlockHeight = height + 1
+			state.LastBlockTime = defaultEvidenceTime.Add(22 * time.Minute)
+			pool.Update(state, types.EvidenceList{ev})
+
+			// The committed marker could not be written, so the evidence must
+			// still be pending instead of vanishing from both keyspaces (and
+			// then being accepted again as new).
+			evList, evSize := pool.PendingEvidence(defaultEvidenceMaxBytes)
+			require.Len(t, evList, 1)
+			require.Equal(t, ev, evList[0])
+			require.NotZero(t, evSize)
+			require.Equal(t, uint32(1), pool.Size())
+		})
 	}
 }
 

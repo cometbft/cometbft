@@ -8,6 +8,8 @@
 
 ### BUG FIXES
 
+- `[config]` reject a non-positive `mempool.recheck_timeout` when rechecking is enabled, which silently made every recheck round time out immediately
+  ([\#6086](https://github.com/cometbft/cometbft/pull/6086))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`

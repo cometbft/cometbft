@@ -372,8 +372,16 @@ func TestResourceManager(t *testing.T) {
 		t.Logf("serviceLimits(identify): %T: %+v", serviceLimits, serviceLimits)
 		t.Logf("peerPingLimits: %T: %+v", peerPingLimits, peerPingLimits)
 
-		// no limits on "system" scope...
+		// no stream limits on "system" scope...
 		require.Equal(t, math.MaxInt64, systemLimits.GetStreamTotalLimit())
+
+		// ...but system connections follow max_peers, not max_peer_streams
+		require.Equal(t, cfg.Limits.MaxPeers*systemConnsPerPeer, systemLimits.GetConnTotalLimit())
+		moreStreams := cfg
+		moreStreams.Limits.MaxPeerStreams *= 10
+		_, moreStreamsLimiter, err := ResourceManagerFromConfig(moreStreams)
+		require.NoError(t, err)
+		require.Equal(t, systemLimits.GetConnTotalLimit(), moreStreamsLimiter.GetSystemLimits().GetConnTotalLimit())
 
 		// ...but strict limits on "peer" scope
 		require.Equal(t, cfg.Limits.MaxPeerStreams, peerLimits.GetStreamTotalLimit())

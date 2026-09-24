@@ -117,9 +117,11 @@ func (env *Environment) GenesisChunked(_ *rpctypes.Context, chunk uint) (*ctypes
 		return nil, fmt.Errorf("service configuration error, there are no chunks")
 	}
 
+	// chunk is client-controlled; values >= 2^63 wrap to a negative int and
+	// must be rejected like any other out-of-range index.
 	id := int(chunk)
 
-	if id > len(env.genChunks)-1 {
+	if id < 0 || id > len(env.genChunks)-1 {
 		return nil, fmt.Errorf("there are %d chunks, %d is invalid", len(env.genChunks)-1, id)
 	}
 

@@ -410,6 +410,8 @@ func TestBitArrayValidateBasic(t *testing.T) {
 		{"valid with elements", NewBitArray(10), true},
 		{"more elements than bits specifies", &BitArray{Bits: 0, Elems: make([]uint64, 5)}, false},
 		{"less elements than bits specifies", &BitArray{Bits: 200, Elems: make([]uint64, 1)}, false},
+		{"negative bits nil elements", &BitArray{Bits: -1, Elems: nil}, false},
+		{"negative bits matching elements", &BitArray{Bits: -64, Elems: make([]uint64, 0)}, false},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -417,6 +419,13 @@ func TestBitArrayValidateBasic(t *testing.T) {
 			require.Equal(t, err == nil, tc.expPass)
 		})
 	}
+}
+
+func TestBitArrayIsFullEmpty(t *testing.T) {
+	require.True(t, (*BitArray)(nil).IsFull())
+	require.True(t, (&BitArray{}).IsFull())
+	require.True(t, NewBitArray(0).IsFull())
+	require.False(t, NewBitArray(1).IsFull())
 }
 
 // Tests that UnmarshalJSON doesn't crash when no bits are passed into the JSON.

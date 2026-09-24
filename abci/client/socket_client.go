@@ -464,6 +464,12 @@ func (cli *socketClient) flushQueue() {
 	cli.mtx.Lock()
 	defer cli.mtx.Unlock()
 
+	// Flushed requests never receive a response, so make sure callers that
+	// wake up from Wait() see an error rather than a nil result.
+	if cli.err == nil {
+		cli.err = ErrClientStopped
+	}
+
 	// mark all in-flight messages as resolved (they will get cli.Error())
 	for req := cli.reqSent.Front(); req != nil; req = req.Next() {
 		reqres := req.Value.(*ReqRes)

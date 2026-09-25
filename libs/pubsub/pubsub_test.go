@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"runtime/debug"
+	"sync"
 	"testing"
 	"time"
 
@@ -275,6 +276,86 @@ func TestClientSubscribesTwice(t *testing.T) {
 	err = s.PublishWithEvents(ctx, "Spider-Man", map[string][]string{"tm.events.type": {"NewBlock"}})
 	require.NoError(t, err)
 	assertReceive(t, "Spider-Man", subscription1.Out())
+}
+
+func TestConcurrentSubscribeSameQuery(t *testing.T) {
+	s := pubsub.NewServer()
+	s.SetLogger(log.TestingLogger())
+	require.NoError(t, s.Start())
+	t.Cleanup(func() {
+		if err := s.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	const goroutines = 16
+	q := query.MustCompile("tm.events.type='NewBlock'")
+
+	var (
+		start sync.WaitGroup
+		done  sync.WaitGroup
+		mtx   sync.Mutex
+		errs  []error
+	)
+	start.Add(1)
+	done.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer done.Done()
+			start.Wait()
+			_, err := s.Subscribe(context.Background(), clientID, q)
+			mtx.Lock()
+			errs = append(errs, err)
+			mtx.Unlock()
+		}()
+	}
+	start.Done()
+	done.Wait()
+
+	var subscribed int
+	for _, err := range errs {
+		if err == nil {
+			subscribed++
+			continue
+		}
+		require.ErrorIs(t, err, pubsub.ErrAlreadySubscribed)
+	}
+	assert.Equal(t, 1, subscribed, "only one of the concurrent calls may subscribe")
+	assert.Equal(t, 1, s.NumClientSubscriptions(clientID))
+
+	// The client is subscribed exactly once, so a single Unsubscribe frees
+	// the query again.
+	require.NoError(t, s.Unsubscribe(context.Background(), clientID, q))
+	assert.Equal(t, 0, s.NumClientSubscriptions(clientID))
+	_, err := s.Subscribe(context.Background(), clientID, q)
+	require.NoError(t, err)
+}
+
+func TestSubscribeReleasesQueryOnFailure(t *testing.T) {
+	// A server that is not running: its command queue fills up and the
+	// subscription never reaches the server loop.
+	s := pubsub.NewServer(pubsub.BufferCapacity(1))
+	s.SetLogger(log.TestingLogger())
+
+	q := query.MustCompile("tm.events.type='NewBlock'")
+	require.NoError(t, s.Publish(context.Background(), "fill the queue"))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+	_, err := s.Subscribe(ctx, clientID, q)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+
+	// The failed attempt must not leave the query claimed.
+	assert.Equal(t, 0, s.NumClientSubscriptions(clientID))
+
+	require.NoError(t, s.Start())
+	t.Cleanup(func() {
+		if err := s.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+	_, err = s.Subscribe(context.Background(), clientID, q)
+	require.NoError(t, err)
 }
 
 func TestUnsubscribe(t *testing.T) {

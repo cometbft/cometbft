@@ -171,30 +171,48 @@ func (s *Server) SubscribeUnbuffered(ctx context.Context, clientID string, query
 }
 
 func (s *Server) subscribe(ctx context.Context, clientID string, query Query, outCapacity int) (*Subscription, error) {
-	s.mtx.RLock()
-	clientSubscriptions, ok := s.subscriptions[clientID]
-	if ok {
-		_, ok = clientSubscriptions[query.String()]
-	}
-	s.mtx.RUnlock()
-	if ok {
+	qStr := query.String()
+
+	// Claim the (clientID, query) pair before handing the subscription to the
+	// server loop. Checking and recording it in one critical section is what
+	// keeps two concurrent calls for the same pair from both being accepted.
+	s.mtx.Lock()
+	if _, ok := s.subscriptions[clientID][qStr]; ok {
+		s.mtx.Unlock()
 		return nil, ErrAlreadySubscribed
 	}
+	if s.subscriptions[clientID] == nil {
+		s.subscriptions[clientID] = make(map[string]struct{})
+	}
+	s.subscriptions[clientID][qStr] = struct{}{}
+	s.mtx.Unlock()
 
 	subscription := NewSubscription(outCapacity)
 	select {
 	case s.cmds <- cmd{op: sub, clientID: clientID, query: query, subscription: subscription}:
-		s.mtx.Lock()
-		if _, ok = s.subscriptions[clientID]; !ok {
-			s.subscriptions[clientID] = make(map[string]struct{})
-		}
-		s.subscriptions[clientID][query.String()] = struct{}{}
-		s.mtx.Unlock()
 		return subscription, nil
 	case <-ctx.Done():
+		s.releaseSubscription(clientID, qStr)
 		return nil, ctx.Err()
 	case <-s.Quit():
+		s.releaseSubscription(clientID, qStr)
 		return nil, errors.New("service is shutting down")
+	}
+}
+
+// releaseSubscription gives up a pair claimed by subscribe when the
+// subscription never reached the server loop.
+func (s *Server) releaseSubscription(clientID, qStr string) {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+
+	clientSubscriptions, ok := s.subscriptions[clientID]
+	if !ok {
+		return
+	}
+	delete(clientSubscriptions, qStr)
+	if len(clientSubscriptions) == 0 {
+		delete(s.subscriptions, clientID)
 	}
 }
 

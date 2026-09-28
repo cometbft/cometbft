@@ -2,6 +2,7 @@ package autofile
 
 import (
 	"os"
+	"os/signal"
 	"path/filepath"
 	"syscall"
 	"testing"
@@ -81,6 +82,26 @@ func TestSIGHUP(t *testing.T) {
 	files, err := os.ReadDir(".")
 	require.NoError(t, err)
 	assert.Empty(t, files)
+}
+
+func TestSIGHUPAfterClose(t *testing.T) {
+	af, err := OpenAutoFile(filepath.Join(t.TempDir(), "sighup_after_close"))
+	require.NoError(t, err)
+	require.NoError(t, af.Close())
+
+	// Keep SIGHUP from terminating the process and observe its delivery.
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGHUP)
+	defer signal.Stop(c)
+
+	// Close must have unregistered af.hupc; otherwise the runtime still
+	// delivers to the closed channel and panics with "send on closed channel".
+	require.NoError(t, syscall.Kill(syscall.Getpid(), syscall.SIGHUP))
+	select {
+	case <-c:
+	case <-time.After(time.Second):
+		t.Fatal("SIGHUP was not delivered")
+	}
 }
 
 // // Manually modify file permissions, close, and reopen using autofile:

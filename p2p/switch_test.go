@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p/conn"
 	p2pproto "github.com/cometbft/cometbft/proto/tendermint/p2p"
@@ -855,6 +857,78 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 
 	// make sure reactor.RemovePeer is finished before InitPeer is called
 	assert.False(t, reactor.InitCalledBeforeRemoveFinished())
+}
+
+// countingReactor counts InitPeer/RemovePeer calls and can hold every
+// InitPeer call at a barrier so that concurrent addPeer calls all pass the
+// duplicate check before any of them reaches peers.Add.
+type countingReactor struct {
+	*BaseReactor
+
+	barrier     *sync.WaitGroup
+	initCalls   int32
+	removeCalls int32
+}
+
+func (r *countingReactor) InitPeer(peer Peer) Peer {
+	atomic.AddInt32(&r.initCalls, 1)
+	r.barrier.Done()
+	r.barrier.Wait()
+	return peer
+}
+
+func (*countingReactor) AddPeer(Peer) {}
+
+func (r *countingReactor) RemovePeer(Peer, any) {
+	atomic.AddInt32(&r.removeCalls, 1)
+}
+
+func newStartableMockPeer(id ID) *mockPeer {
+	mp := &mockPeer{ip: net.IP{127, 0, 0, 1}, id: id}
+	mp.BaseService = *service.NewBaseService(nil, "mockPeer", mp)
+	return mp
+}
+
+func TestSwitchAddPeerReleasesReactorStateOnDuplicateID(t *testing.T) {
+	var barrier sync.WaitGroup
+	barrier.Add(2)
+	reactor := &countingReactor{barrier: &barrier}
+	reactor.BaseReactor = NewBaseReactor("counting", reactor)
+
+	sw := MakeSwitch(cfg, 1, func(_ int, sw *Switch) *Switch {
+		sw.AddReactor("counting", reactor)
+		return sw
+	})
+	require.NoError(t, sw.Start())
+	t.Cleanup(func() {
+		if err := sw.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	// Two connections for the same peer ID race into addPeer, e.g. an
+	// inbound accept and an outbound dial completing at the same time.
+	nodeKey := NodeKey{PrivKey: ed25519.GenPrivKey()}
+	id := nodeKey.ID()
+	errs := make(chan error, 2)
+	for i := 0; i < 2; i++ {
+		go func() { errs <- sw.addPeer(newStartableMockPeer(id)) }()
+	}
+
+	var failed int
+	for i := 0; i < 2; i++ {
+		if err := <-errs; err != nil {
+			require.ErrorAs(t, err, &ErrSwitchDuplicatePeerID{})
+			failed++
+		}
+	}
+	require.Equal(t, 1, failed, "exactly one of the racing peers must be rejected")
+
+	// Both peers went through InitPeer; the rejected one must be handed
+	// back to the reactors so their per-peer state does not leak.
+	require.EqualValues(t, 2, atomic.LoadInt32(&reactor.initCalls))
+	require.EqualValues(t, 1, atomic.LoadInt32(&reactor.removeCalls))
+	require.Equal(t, 1, sw.Peers().Size())
 }
 
 func makeSwitchForBenchmark(b *testing.B) *Switch {

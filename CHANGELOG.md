@@ -8,6 +8,8 @@
 
 ### BUG FIXES
 
+- `[types]` bound the number of signatures accepted by `Commit.ValidateBasic` and `ExtendedCommit.ValidateBasic` by `MaxVotesCount`, the limit those functions were documented to enforce
+  ([\#6085](https://github.com/cometbft/cometbft/pull/6085))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`

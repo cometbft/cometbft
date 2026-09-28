@@ -18,6 +18,8 @@
   preventing cancellation functions from accumulating for long-lived clients
   ([\#6083](https://github.com/cometbft/cometbft/pull/6083))
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`
+- `[consensus]` fix flaky `TestPrepareProposalReceivesVoteExtensions`.
+  ([\#5936](https://github.com/cometbft/cometbft/pull/5936))
 - `[state]` reject `/tx_search` and `/block_search` queries outright when
   they compare `tx.height`/`block.height` against a non-numeric argument,
   instead of silently dropping the condition and widening the results to

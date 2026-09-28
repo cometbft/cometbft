@@ -91,6 +91,63 @@ func (qr QueryRange) UpperBoundValue() any {
 	}
 }
 
+// tightenLowerBound narrows the range to the stricter of its current lower
+// bound and the given one. Conditions on the same key are ANDed, so two lower
+// bounds must intersect rather than the last one replacing the first.
+func (qr *QueryRange) tightenLowerBound(value any, inclusive bool) {
+	if qr.LowerBound == nil {
+		qr.LowerBound, qr.IncludeLowerBound = value, inclusive
+		return
+	}
+
+	cmp, comparable := compareBounds(value, qr.LowerBound)
+	switch {
+	case !comparable || cmp > 0:
+		qr.LowerBound, qr.IncludeLowerBound = value, inclusive
+	case cmp == 0:
+		qr.IncludeLowerBound = qr.IncludeLowerBound && inclusive
+	}
+}
+
+// tightenUpperBound narrows the range to the stricter of its current upper
+// bound and the given one.
+func (qr *QueryRange) tightenUpperBound(value any, inclusive bool) {
+	if qr.UpperBound == nil {
+		qr.UpperBound, qr.IncludeUpperBound = value, inclusive
+		return
+	}
+
+	cmp, comparable := compareBounds(value, qr.UpperBound)
+	switch {
+	case !comparable || cmp < 0:
+		qr.UpperBound, qr.IncludeUpperBound = value, inclusive
+	case cmp == 0:
+		qr.IncludeUpperBound = qr.IncludeUpperBound && inclusive
+	}
+}
+
+// compareBounds compares two bound values as produced by conditionArg. The
+// second return value reports whether they could be compared at all; values of
+// different or unsupported types cannot.
+func compareBounds(a, b any) (int, bool) {
+	switch av := a.(type) {
+	case *big.Float:
+		bv, ok := b.(*big.Float)
+		if !ok {
+			return 0, false
+		}
+		return av.Cmp(bv), true
+	case time.Time:
+		bv, ok := b.(time.Time)
+		if !ok {
+			return 0, false
+		}
+		return av.Compare(bv), true
+	default:
+		return 0, false
+	}
+}
+
 // LookForRangesWithHeight returns a mapping of QueryRanges and the matching indexes in
 // the provided query conditions.
 func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRanges, indexes []int, heightRange QueryRange) {
@@ -107,32 +164,18 @@ func LookForRangesWithHeight(conditions []syntax.Condition) (queryRange QueryRan
 			}
 
 			switch c.Op {
-			case syntax.TGt:
+			case syntax.TGt, syntax.TGeq:
+				inclusive := c.Op == syntax.TGeq
+				r.tightenLowerBound(conditionArg(c), inclusive)
 				if heightKey {
-					heightRange.LowerBound = conditionArg(c)
-				}
-				r.LowerBound = conditionArg(c)
-
-			case syntax.TGeq:
-				r.IncludeLowerBound = true
-				r.LowerBound = conditionArg(c)
-				if heightKey {
-					heightRange.IncludeLowerBound = true
-					heightRange.LowerBound = conditionArg(c)
+					heightRange.tightenLowerBound(conditionArg(c), inclusive)
 				}
 
-			case syntax.TLt:
-				r.UpperBound = conditionArg(c)
+			case syntax.TLt, syntax.TLeq:
+				inclusive := c.Op == syntax.TLeq
+				r.tightenUpperBound(conditionArg(c), inclusive)
 				if heightKey {
-					heightRange.UpperBound = conditionArg(c)
-				}
-
-			case syntax.TLeq:
-				r.IncludeUpperBound = true
-				r.UpperBound = conditionArg(c)
-				if heightKey {
-					heightRange.IncludeUpperBound = true
-					heightRange.UpperBound = conditionArg(c)
+					heightRange.tightenUpperBound(conditionArg(c), inclusive)
 				}
 			}
 

@@ -8,6 +8,8 @@
 
 ### BUG FIXES
 
+- `[state/indexer]` intersect repeated range conditions on the same event key instead of keeping only the last one, so `/tx_search` and `/block_search` no longer return rows excluded by one of the conditions
+  ([\#6084](https://github.com/cometbft/cometbft/pull/6084))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`

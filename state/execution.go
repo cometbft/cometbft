@@ -54,6 +54,8 @@ type BlockExecutor struct {
 
 	// blockTimeTolerance is the maximum allowed difference between proposed block time and wall clock.
 	blockTimeTolerance time.Duration
+
+	asyncRunner func(func())
 }
 
 type cachedCommitInfoValidators struct {
@@ -112,6 +114,14 @@ func (blockExec *BlockExecutor) Store() Store {
 // If not called, it defaults to types.NopEventBus.
 func (blockExec *BlockExecutor) SetEventBus(eventBus types.BlockEventPublisher) {
 	blockExec.eventBus = eventBus
+}
+
+// SetAsyncRunner opts into publishing block events off the ApplyBlock critical
+// path. The runner must execute accepted tasks in submission order, and its
+// owner must drain them before stopping the event bus. Passing nil restores
+// synchronous publication.
+func (blockExec *BlockExecutor) SetAsyncRunner(runner func(func())) {
+	blockExec.asyncRunner = runner
 }
 
 // CreateProposalBlock calls state.MakeBlock with evidence from the evpool
@@ -381,9 +391,19 @@ func (blockExec *BlockExecutor) applyBlock(state State, blockID types.BlockID, b
 		}
 	}
 
-	// Events are fired after everything else.
-	// NOTE: if we crash between Commit and Save, events wont be fired during replay
-	fireEvents(blockExec.logger, blockExec.eventBus, block, blockID, abciResponse, validatorUpdates)
+	eventBus := blockExec.eventBus
+	if _, ok := eventBus.(types.NopEventBus); !ok {
+		// Events are fired after everything else.
+		// NOTE: if we crash between Commit and Save, events wont be fired during replay
+		task := func() {
+			fireEvents(blockExec.logger, eventBus, block, blockID, abciResponse, validatorUpdates)
+		}
+		if blockExec.asyncRunner != nil {
+			blockExec.asyncRunner(task)
+		} else {
+			task()
+		}
+	}
 
 	return state, nil
 }

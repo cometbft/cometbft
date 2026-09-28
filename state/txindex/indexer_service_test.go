@@ -1,6 +1,8 @@
 package txindex_test
 
 import (
+	"bytes"
+	"runtime/pprof"
 	"testing"
 	"time"
 
@@ -91,4 +93,48 @@ func TestIndexerServiceIndexesBlocks(t *testing.T) {
 	res, err = txIndexer.Get(types.Tx("bar").Hash())
 	require.NoError(t, err)
 	require.Equal(t, txResult2, res)
+}
+
+func TestIndexerServiceStopsWhileWaitingForTxs(t *testing.T) {
+	eventBus := types.NewEventBus()
+	eventBus.SetLogger(log.TestingLogger())
+	require.NoError(t, eventBus.Start())
+	t.Cleanup(func() {
+		if err := eventBus.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	store := db.NewMemDB()
+	txIndexer := kv.NewTxIndex(store)
+	blockIndexer := blockidxkv.New(db.NewPrefixDB(store, []byte("block_events")))
+
+	service := txindex.NewIndexerService(txIndexer, blockIndexer, eventBus, false)
+	service.SetLogger(log.TestingLogger())
+	require.NoError(t, service.Start())
+
+	// Announce two txs but publish only one, leaving the worker waiting for
+	// the second one when the service is stopped.
+	require.NoError(t, eventBus.PublishEventNewBlockEvents(types.EventDataNewBlockEvents{
+		Height: 1,
+		NumTxs: 2,
+	}))
+	require.NoError(t, eventBus.PublishEventTx(types.EventDataTx{TxResult: abci.TxResult{
+		Height: 1,
+		Index:  0,
+		Tx:     types.Tx("foo"),
+		Result: abci.ExecTxResult{Code: 0},
+	}}))
+
+	require.NoError(t, service.Stop())
+
+	// Unsubscribing does not close the subscription's Out channel, so the
+	// worker must return via Canceled() rather than block forever.
+	require.Eventually(t, func() bool {
+		var buf bytes.Buffer
+		if err := pprof.Lookup("goroutine").WriteTo(&buf, 1); err != nil {
+			return false
+		}
+		return !bytes.Contains(buf.Bytes(), []byte("txindex.(*IndexerService).OnStart"))
+	}, time.Second, 10*time.Millisecond, "indexer worker goroutine still running after Stop")
 }

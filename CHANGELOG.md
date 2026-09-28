@@ -8,6 +8,10 @@
 
 ### BUG FIXES
 
+- `[privval]` fsync the parent directory after the atomic rename in
+  `FilePVLastSignState.Save`/`FilePVKey.Save`, so last-sign-state updates
+  can no longer roll back to a stale HRS watermark after a crash or power
+  loss ([\#6031](https://github.com/cometbft/cometbft/issues/6031))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`

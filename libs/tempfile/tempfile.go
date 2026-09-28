@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -72,7 +73,9 @@ func randWriteFileSuffix() string {
 }
 
 // WriteFileAtomic creates a temporary file with data and provided perm and
-// swaps it atomically with filename if successful.
+// swaps it atomically with filename if successful. After the rename, it
+// fsyncs the parent directory so the new directory entry is durable across a
+// crash or power loss (a no-op on Windows, which cannot sync directories).
 func WriteFileAtomic(filename string, data []byte, perm os.FileMode) (err error) {
 	// This implementation is inspired by the golang stdlibs method of creating
 	// tempfiles. Notable differences are that we use different flags, a 64 bit LCG
@@ -125,5 +128,33 @@ func WriteFileAtomic(filename string, data []byte, perm os.FileMode) (err error)
 	// cannot access the file because it is being used by another process." on windows.
 	f.Close()
 
-	return os.Rename(f.Name(), filename)
+	if err := os.Rename(f.Name(), filename); err != nil {
+		return err
+	}
+
+	return syncDir(dir)
+}
+
+// syncDir fsyncs dir so a preceding rename into it is durable across a
+// crash or power loss. Without this, the atomic rename above can appear to
+// succeed but still roll back after an unclean shutdown, since only the
+// directory sync makes the new directory entry durable.
+//
+// This is a no-op on Windows: directories can't be opened for syncing there,
+// and FlushFileBuffers has no directory-entry equivalent to call.
+func syncDir(dir string) error {
+	if runtime.GOOS == "windows" {
+		return nil
+	}
+
+	d, err := os.Open(dir)
+	if err != nil {
+		return err
+	}
+
+	err = d.Sync()
+	if closeErr := d.Close(); err == nil {
+		err = closeErr
+	}
+	return err
 }

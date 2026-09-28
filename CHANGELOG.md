@@ -23,6 +23,10 @@
   instead of silently dropping the condition and widening the results to
   rows the query explicitly excludes
   ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
+- `[types]` `LightClientAttackEvidence.Hash()` now copies the full 32-byte
+  conflicting block hash instead of dropping its last byte, so two conflicting
+  blocks whose hashes differ only in that byte no longer collide
+  ([\#5902](https://github.com/cometbft/cometbft/issues/5902))
 
 ### IMPROVEMENTS
 
@@ -33,6 +37,11 @@
 ### FEATURES
 
 ### STATE-BREAKING
+
+- `[types]` fix `LightClientAttackEvidence.Hash()` truncating the conflicting
+  block hash by one byte; this changes the evidence hash used for duplicate
+  detection in `CheckEvidence` and for evidence pool keys
+  ([\#5902](https://github.com/cometbft/cometbft/issues/5902))
 
 ### API-BREAKING
 

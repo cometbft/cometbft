@@ -227,6 +227,7 @@ func createMempoolAndMempoolReactor(
 	state sm.State,
 	waitForSync bool,
 	memplMetrics *mempl.Metrics,
+	eventBus *types.EventBus,
 	logger log.Logger,
 ) (mempl.Mempool, waitSyncReactor) {
 	logger = logger.With("module", "mempool")
@@ -241,6 +242,7 @@ func createMempoolAndMempoolReactor(
 			mempl.WithMetrics(memplMetrics),
 			mempl.WithPreCheck(sm.TxPreCheck(state)),
 			mempl.WithPostCheck(sm.TxPostCheck(state)),
+			mempl.WithEventBus(eventBus),
 		)
 		mp.SetLogger(logger)
 		reactor := mempl.NewReactor(

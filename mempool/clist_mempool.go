@@ -55,6 +55,11 @@ type CListMempool struct {
 
 	logger  log.Logger
 	metrics *Metrics
+
+	// eventBus publishes a MempoolTx event whenever a tx is admitted into
+	// the mempool. Defaults to a no-op so callers that don't care about
+	// mempool events (eg. most tests) don't need to wire one up.
+	eventBus types.MempoolTxEventPublisher
 }
 
 var _ Mempool = &CListMempool{}
@@ -77,6 +82,7 @@ func NewCListMempool(
 		recheck:      newRecheck(),
 		logger:       log.NewNopLogger(),
 		metrics:      NopMetrics(),
+		eventBus:     types.NopEventBus{},
 	}
 	mp.height.Store(height)
 
@@ -148,6 +154,13 @@ func WithPostCheck(f PostCheckFunc) CListMempoolOption {
 // WithMetrics sets the metrics.
 func WithMetrics(metrics *Metrics) CListMempoolOption {
 	return func(mem *CListMempool) { mem.metrics = metrics }
+}
+
+// WithEventBus sets the event bus used to publish a MempoolTx event
+// whenever a tx is admitted into the mempool. If not set, the mempool
+// publishes no such events.
+func WithEventBus(eventBus types.MempoolTxEventPublisher) CListMempoolOption {
+	return func(mem *CListMempool) { mem.eventBus = eventBus }
 }
 
 // Safe for concurrent use by multiple goroutines.
@@ -451,6 +464,12 @@ func (mem *CListMempool) resCbFirstTime(
 				"height", mem.height.Load(),
 				"total", mem.Size(),
 			)
+			if err := mem.eventBus.PublishEventMempoolTx(types.EventDataMempoolTx{
+				Tx:     tx,
+				Result: *r.CheckTx,
+			}); err != nil {
+				mem.logger.Error("failed publishing mempool tx event", "err", err)
+			}
 			mem.notifyTxsAvailable()
 		} else {
 			// ignore bad transaction

@@ -1072,6 +1072,7 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 	}{
 		{func(msg *VoteSetBitsMessage) {}, ""},
 		{func(msg *VoteSetBitsMessage) { msg.Height = -1 }, cmterrors.ErrNegativeField{Field: "Height"}.Error()},
+		{func(msg *VoteSetBitsMessage) { msg.Round = -1 }, cmterrors.ErrNegativeField{Field: "Round"}.Error()},
 		{func(msg *VoteSetBitsMessage) { msg.Type = 0x03 }, cmterrors.ErrInvalidField{Field: "Type"}.Error()},
 		{func(msg *VoteSetBitsMessage) {
 			msg.BlockID = types.BlockID{
@@ -1092,6 +1093,10 @@ func TestVoteSetBitsMessageValidateBasic(t *testing.T) {
 		},
 		{
 			func(msg *VoteSetBitsMessage) { msg.Votes.Bits = 500 },
+			"wrong Votes",
+		},
+		{
+			func(msg *VoteSetBitsMessage) { msg.Votes = &bits.BitArray{Bits: -1} },
 			"wrong Votes",
 		},
 	}

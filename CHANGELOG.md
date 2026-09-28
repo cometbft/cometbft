@@ -26,6 +26,8 @@
 
 ### IMPROVEMENTS
 
+- `[state]` avoid speculative proposal block construction
+  ([\#6088](https://github.com/cometbft/cometbft/pull/6088))
 - `[state]` use fast validator loading for `BlockExecutor` commit-info paths,
   avoiding unnecessary proposer-priority reconstruction on cache misses
   ([\#6039](https://github.com/cometbft/cometbft/pull/6039))

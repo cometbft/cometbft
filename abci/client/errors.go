@@ -1,10 +1,14 @@
 package abcicli
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/cometbft/cometbft/abci/types"
 )
+
+// ErrClientStopped is returned when the ABCI client is stopped.
+var ErrClientStopped = errors.New("ABCI client is stopped")
 
 // ErrUnknownAbciTransport is returned when trying to create a client with an invalid transport option
 type ErrUnknownAbciTransport struct {

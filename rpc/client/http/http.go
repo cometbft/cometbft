@@ -652,6 +652,9 @@ func (w *WSEvents) OnStop() {
 //
 // Channel is never closed to prevent clients from seeing an erroneous event.
 //
+// Event delivery is best-effort. An event is dropped if the channel is not
+// ready, including when an unbuffered channel has no waiting receiver.
+//
 // It returns an error if WSEvents is not running.
 func (w *WSEvents) Subscribe(ctx context.Context, _, query string,
 	outCapacity ...int,
@@ -741,6 +744,24 @@ func isErrAlreadySubscribed(err error) bool {
 	return strings.Contains(err.Error(), cmtpubsub.ErrAlreadySubscribed.Error())
 }
 
+func (w *WSEvents) publishEvent(result *ctypes.ResultEvent) {
+	dropped := false
+
+	w.mtx.RLock()
+	if out, ok := w.subscriptions[result.Query]; ok {
+		select {
+		case out <- *result:
+		default:
+			dropped = true
+		}
+	}
+	w.mtx.RUnlock()
+
+	if dropped {
+		w.Logger.Error("wanted to publish ResultEvent, but out channel is not ready", "result", result, "query", result.Query)
+	}
+}
+
 func (w *WSEvents) eventListener() {
 	for {
 		select {
@@ -770,19 +791,7 @@ func (w *WSEvents) eventListener() {
 				continue
 			}
 
-			w.mtx.RLock()
-			if out, ok := w.subscriptions[result.Query]; ok {
-				if cap(out) == 0 {
-					out <- *result
-				} else {
-					select {
-					case out <- *result:
-					default:
-						w.Logger.Error("wanted to publish ResultEvent, but out channel is full", "result", result, "query", result.Query)
-					}
-				}
-			}
-			w.mtx.RUnlock()
+			w.publishEvent(result)
 		case <-w.Quit():
 			return
 		}

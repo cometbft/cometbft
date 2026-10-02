@@ -8,7 +8,7 @@
 
 ### BUG FIXES
 
-- `[config]` reject a non-positive `mempool.recheck_timeout` when rechecking is enabled, which silently made every recheck round time out immediately
+- `[config]` reject a non-positive `mempool.recheck_timeout` for the flood mempool when rechecking is enabled, which silently made every recheck round time out immediately
   ([\#6086](https://github.com/cometbft/cometbft/pull/6086))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))

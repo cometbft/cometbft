@@ -8,6 +8,10 @@
 
 ### BUG FIXES
 
+- `[p2p]` fix a node evicting a connected peer from its peer set, and then redialing it without
+  pause, after two connections to that peer raced to be added; `PeerSet.Remove` now removes only
+  the peer it is given
+  ([\#6101](https://github.com/cometbft/cometbft/issues/6101))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`

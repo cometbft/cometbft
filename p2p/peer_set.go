@@ -104,13 +104,18 @@ func (ps *PeerSet) Get(peerKey ID) Peer {
 	return nil
 }
 
-// Remove removes the peer from the PeerSet.
+// Remove removes the peer from the PeerSet, if it is the peer the set holds for its ID.
+// Returns true if the peer was removed, and false if it was not in the set.
 func (ps *PeerSet) Remove(peer Peer) bool {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 
 	item, ok := ps.lookup[peer.ID()]
-	if !ok || len(ps.list) == 0 {
+	// The set may hold another peer with the same ID: when two connections to one node race
+	// to be added (each side dialing the other), the one that lost is stopped through the
+	// switch while the one that won keeps running. Removing the winner's entry would leave a
+	// running peer outside the set, and the switch would keep dialing a node it is connected to.
+	if !ok || len(ps.list) == 0 || item.peer != peer {
 		// Removing the peer has failed so we set a flag to mark that a removal was attempted.
 		// This can happen when the peer add routine from the switch is running in
 		// parallel to the receive routine of MConn.

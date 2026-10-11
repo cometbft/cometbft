@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -22,6 +23,7 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p/conn"
 	p2pproto "github.com/cometbft/cometbft/proto/tendermint/p2p"
@@ -920,6 +922,100 @@ func TestSwitchRemovalErr(t *testing.T) {
 	sw2.StopPeerForError(p, fmt.Errorf("peer should error"))
 
 	assert.Equal(t, sw2.peers.Add(p).Error(), ErrPeerRemoval{}.Error())
+}
+
+// A duplicate of a connected peer, stopped for an error (the loser of a race between two
+// connections to one node), must not take the connected peer out of the switch's set.
+func TestSwitchStopPeerForErrorOfDuplicateKeepsPeer(t *testing.T) {
+	sw1, sw2 := MakeSwitchPair(initSwitchFunc)
+	t.Cleanup(func() {
+		_ = sw1.Stop()
+		_ = sw2.Stop()
+	})
+	require.Equal(t, 1, sw1.Peers().Size())
+	connected := sw1.Peers().Copy()[0]
+
+	duplicate := &mockPeer{ip: net.IP{127, 0, 0, 1}, id: connected.ID()} // the switches are joined by pipes, which have no IP
+	duplicate.BaseService = *service.NewBaseService(nil, "duplicate", duplicate)
+	require.NoError(t, duplicate.Start())
+
+	sw1.StopPeerForError(duplicate, errors.New("lost the race to be added"))
+
+	assert.Same(t, connected, sw1.Peers().Get(connected.ID()), "the connected peer left the set")
+	assert.True(t, connected.IsRunning())
+	assert.False(t, duplicate.IsRunning())
+}
+
+// barrierReactor holds every InitPeer call until a given number have arrived, so that
+// concurrent addPeer calls for one ID all pass filterPeer's duplicate check before any of
+// them reaches peers.Add: the race between an inbound and an outbound connection to one node.
+type barrierReactor struct {
+	*BaseReactor
+	barrier *sync.WaitGroup
+}
+
+func (r *barrierReactor) InitPeer(peer Peer) Peer {
+	r.barrier.Done()
+	r.barrier.Wait()
+	return peer
+}
+
+func (*barrierReactor) AddPeer(Peer)         {}
+func (*barrierReactor) RemovePeer(Peer, any) {}
+
+func TestSwitchDuplicatePeerRaceKeepsWinner(t *testing.T) {
+	var barrier sync.WaitGroup
+	barrier.Add(2)
+	reactor := &barrierReactor{barrier: &barrier}
+	reactor.BaseReactor = NewBaseReactor("barrier", reactor)
+
+	sw := MakeSwitch(cfg, 1, func(_ int, sw *Switch) *Switch {
+		sw.AddReactor("barrier", reactor)
+		return sw
+	})
+	require.NoError(t, sw.Start())
+	t.Cleanup(func() {
+		if err := sw.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	// Two connections from the same node race into addPeer.
+	nodeKey := NodeKey{PrivKey: ed25519.GenPrivKey()}
+	id := nodeKey.ID()
+	type result struct {
+		peer *mockPeer
+		err  error
+	}
+	results := make(chan result, 2)
+	for i := 0; i < 2; i++ {
+		p := &mockPeer{ip: net.IP{127, 0, 0, 1}, id: id}
+		p.BaseService = *service.NewBaseService(nil, "racing", p)
+		go func() { results <- result{p, sw.addPeer(p)} }()
+	}
+	var winner, loser *mockPeer
+	for i := 0; i < 2; i++ {
+		r := <-results
+		if r.err == nil {
+			winner = r.peer
+			continue
+		}
+		require.ErrorAs(t, r.err, &ErrSwitchDuplicatePeerID{})
+		loser = r.peer
+	}
+	require.NotNil(t, winner, "neither racing peer was added")
+	require.NotNil(t, loser, "both racing peers were added")
+	require.True(t, loser.IsRunning(), "addPeer starts a peer before adding it")
+
+	// The loser's connection is closed and its error callback stops it, before the add
+	// path does.
+	sw.StopPeerForError(loser, errors.New("use of closed network connection"))
+
+	require.NotNil(t, sw.Peers().Get(id), "the winner left the peer set")
+	assert.Same(t, winner, sw.Peers().Get(id))
+	assert.True(t, winner.IsRunning())
+	assert.True(t, sw.IsDialingOrExistingAddress(&NetAddress{ID: id, IP: net.IP{127, 0, 0, 1}, Port: 26656}),
+		"the switch would dial a node it is connected to")
 }
 
 // filteringReactor is a mock reactor that optionally filters messages via the

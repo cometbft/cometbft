@@ -65,8 +65,10 @@ type Node struct {
 	eventBus          *types.EventBus // pub/sub for services
 	stateStore        sm.Store
 	blockStore        *store.BlockStore // store the blockchain to disk
-	bcReactor         p2p.Reactor       // for block-syncing
-	mempoolReactor    waitSyncReactor   // for gossipping transactions
+	blockExec         *sm.BlockExecutor
+	blockEventRunner  *asyncEventRunner
+	bcReactor         p2p.Reactor     // for block-syncing
+	mempoolReactor    waitSyncReactor // for gossipping transactions
 	mempool           mempl.Mempool
 	stateSync         bool                    // whether the node should state sync on startup
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
@@ -93,6 +95,20 @@ type waitSyncReactor interface {
 
 // Option sets a parameter for the node.
 type Option func(*Node)
+
+// AsyncBlockEvents opts the node into publishing block events outside the
+// ApplyBlock critical path. The node owns the runner and drains it before
+// stopping the indexer and event bus.
+func AsyncBlockEvents() Option {
+	return func(n *Node) {
+		if n.blockEventRunner != nil {
+			return
+		}
+		runner := newAsyncEventRunner(defaultAsyncEventQueueSize)
+		n.blockEventRunner = runner
+		n.blockExec.SetAsyncRunner(runner.Submit)
+	}
+}
 
 // CustomReactors allows you to add custom reactors (name -> p2p.Reactor) to
 // the node's Switch.
@@ -590,6 +606,7 @@ func NewNodeWithContext(
 
 		stateStore:       stateStore,
 		blockStore:       blockStore,
+		blockExec:        blockExec,
 		bcReactor:        bcReactor,
 		mempoolReactor:   mempoolReactor,
 		mempool:          mempool,
@@ -736,14 +753,9 @@ func (n *Node) OnStop() {
 
 	n.Logger.Info("Stopping Node")
 
-	// first stop the non-reactor services
-	if err := n.eventBus.Stop(); err != nil {
-		n.Logger.Error("Error closing eventBus", "err", err)
-	}
-	if n.indexerService != nil {
-		if err := n.indexerService.Stop(); err != nil {
-			n.Logger.Error("Error closing indexerService", "err", err)
-		}
+	if n.blockEventRunner == nil {
+		// Preserve the historical order: first stop the non-reactor event services.
+		n.stopEventServices()
 	}
 	// Close the priv validator before stopping the reactors: sw.Stop waits on
 	// the consensus receiveRoutine, which can be stuck retrying a gone remote
@@ -758,6 +770,12 @@ func (n *Node) OnStop() {
 	// now stop the reactors
 	if err := n.sw.Stop(); err != nil {
 		n.Logger.Error("Error closing switch", "err", err)
+	}
+	if n.blockEventRunner != nil {
+		// All event producers have stopped. Drain accepted work before stopping
+		// the event consumers.
+		n.blockEventRunner.Stop()
+		n.stopEventServices()
 	}
 
 	if mp, ok := n.transport.(*p2p.MultiplexTransport); ok {
@@ -809,6 +827,17 @@ func (n *Node) OnStop() {
 		n.Logger.Info("Closing evidencestore")
 		if err := n.EvidencePool().Close(); err != nil {
 			n.Logger.Error("problem closing evidencestore", "err", err)
+		}
+	}
+}
+
+func (n *Node) stopEventServices() {
+	if err := n.eventBus.Stop(); err != nil {
+		n.Logger.Error("Error closing eventBus", "err", err)
+	}
+	if n.indexerService != nil {
+		if err := n.indexerService.Stop(); err != nil {
+			n.Logger.Error("Error closing indexerService", "err", err)
 		}
 	}
 }

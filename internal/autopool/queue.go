@@ -82,7 +82,8 @@ type PriorityQueue struct {
 type PriorityQueueOption func(*PriorityQueue)
 
 // WithOnEvict sets a callback invoked with the value dropped whenever Push
-// evicts a lower-priority item to make room.
+// evicts a lower-priority item to make room. It runs under the queue lock, so it
+// must not call back into the queue.
 func WithOnEvict(onEvict func(value any)) PriorityQueueOption {
 	return func(q *PriorityQueue) { q.onEvict = onEvict }
 }

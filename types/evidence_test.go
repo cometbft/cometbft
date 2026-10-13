@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/binary"
 	"math"
 	"testing"
 	"time"
@@ -119,6 +120,15 @@ func TestLightClientAttackEvidenceBasic(t *testing.T) {
 	assert.NotNil(t, lcae.Hash())
 	assert.Equal(t, lcae.Height(), commonHeight) // Height should be the common Height
 	assert.NotNil(t, lcae.Bytes())
+
+	// Hash must be computed over the full conflicting block hash, not a truncated
+	// version of it (see https://github.com/cometbft/cometbft/issues/5902).
+	buf := make([]byte, binary.MaxVarintLen64)
+	n := binary.PutVarint(buf, lcae.CommonHeight)
+	preimage := make([]byte, 0, tmhash.Size+n)
+	preimage = append(preimage, lcae.ConflictingBlock.Hash().Bytes()...)
+	preimage = append(preimage, buf[:n]...)
+	assert.Equal(t, tmhash.Sum(preimage), lcae.Hash())
 
 	// malleate evidence to test hash uniqueness
 	testCases := []struct {

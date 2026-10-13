@@ -10,6 +10,10 @@
 
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
+- `[pubsub]` unregister subscriptions canceled with `ErrOutOfCapacity`, so they stop
+  counting against `max_subscriptions_per_client` and the client can subscribe
+  to the same query again
+  ([\#6108](https://github.com/cometbft/cometbft/pull/6108))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`
   ([\#6074](https://github.com/cometbft/cometbft/pull/6074))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race

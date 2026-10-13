@@ -933,6 +933,9 @@ func (commit *Commit) ValidateBasic() error {
 		if len(commit.Signatures) == 0 {
 			return errors.New("no signatures in commit")
 		}
+		if len(commit.Signatures) > MaxVotesCount {
+			return fmt.Errorf("too many signatures: %d, max: %d", len(commit.Signatures), MaxVotesCount)
+		}
 		for i, commitSig := range commit.Signatures {
 			if err := commitSig.ValidateBasic(); err != nil {
 				return fmt.Errorf("wrong CommitSig #%d: %v", i, err)
@@ -1238,6 +1241,9 @@ func (ec *ExtendedCommit) ValidateBasic() error {
 
 		if len(ec.ExtendedSignatures) == 0 {
 			return errors.New("no signatures in commit")
+		}
+		if len(ec.ExtendedSignatures) > MaxVotesCount {
+			return fmt.Errorf("too many signatures: %d, max: %d", len(ec.ExtendedSignatures), MaxVotesCount)
 		}
 		for i, extCommitSig := range ec.ExtendedSignatures {
 			if err := extCommitSig.ValidateBasic(); err != nil {

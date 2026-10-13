@@ -816,7 +816,6 @@ func (cfg *LibP2PConfig) ValidateBasic() error {
 }
 
 func DefaultLibP2PScaler() LibP2PScaler {
-	defaultOverrideMaxQueueSize := 200_000
 	return LibP2PScaler{
 		MinWorkers:       4,
 		MaxWorkers:       32,
@@ -828,7 +827,8 @@ func DefaultLibP2PScaler() LibP2PScaler {
 				MinWorkers:       8,
 				MaxWorkers:       512,
 				ThresholdLatency: 500 * time.Millisecond,
-				MaxQueueSize:     &defaultOverrideMaxQueueSize,
+				// MaxQueueSize stays nil: a non-nil default would survive config reload
+				// into overrides[0] that omit it, masking the global cap.
 			},
 		},
 	}

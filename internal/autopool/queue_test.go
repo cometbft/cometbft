@@ -192,7 +192,8 @@ func TestPriorityQueueWithMax(t *testing.T) {
 
 func TestPriorityQueueWithMaxEvictsLowerPriorityWhenFull(t *testing.T) {
 	const maxSize = 5
-	q := NewPriorityQueueWithMax(3, maxSize)
+	var evicted []any
+	q := NewPriorityQueueWithMax(3, maxSize, WithOnEvict(func(v any) { evicted = append(evicted, v) }))
 
 	for i := 0; i < maxSize; i++ {
 		require.NoError(t, q.Push(i, 1))
@@ -201,6 +202,7 @@ func TestPriorityQueueWithMaxEvictsLowerPriorityWhenFull(t *testing.T) {
 	// higher-priority push evicts the oldest priority-1 item instead of failing
 	require.NoError(t, q.Push("high-priority", 3))
 	require.Equal(t, maxSize, q.size)
+	require.Equal(t, []any{0}, evicted)
 
 	v, ok := q.Pop()
 	require.True(t, ok)

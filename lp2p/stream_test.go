@@ -233,6 +233,56 @@ func TestStream(t *testing.T) {
 			}
 		})
 
+		t.Run("SlowPeerRenewsDeadline", func(t *testing.T) {
+			// A peer that keeps delivering bytes less than one idle timeout
+			// apart must succeed even if the whole transfer takes longer than
+			// the timeout.
+			suite := newStreamTestSuite(t)
+
+			prev := streamReadIdleTimeout
+			streamReadIdleTimeout = 300 * time.Millisecond
+			t.Cleanup(func() { streamReadIdleTimeout = prev })
+
+			const (
+				chunks    = 5
+				chunkSize = 100
+				gap       = 150 * time.Millisecond
+			)
+			payload := bytes.Repeat([]byte("x"), chunks*chunkSize)
+
+			type result struct {
+				out []byte
+				err error
+			}
+			res := make(chan result, 1)
+			suite.hostA.SetStreamHandler(suite.protoID, func(stream network.Stream) {
+				out, err := StreamReadSized(stream, MaxStreamSize)
+				res <- result{out, err}
+			})
+
+			stream := suite.newStream(t)
+			defer stream.Close()
+
+			start := time.Now()
+			_, err := stream.Write(uint64ToUvarint(uint64(len(payload))))
+			require.NoError(t, err)
+
+			for i := 0; i < chunks; i++ {
+				time.Sleep(gap)
+				_, err := stream.Write(payload[i*chunkSize : (i+1)*chunkSize])
+				require.NoError(t, err)
+			}
+
+			select {
+			case r := <-res:
+				require.NoError(t, r.err)
+				require.Equal(t, payload, r.out)
+				require.Greater(t, time.Since(start), streamReadIdleTimeout)
+			case <-time.After(5 * time.Second):
+				t.Fatal("StreamReadSized did not return")
+			}
+		})
+
 		t.Run("AllocatesForReceivedBytesOnly", func(t *testing.T) {
 			// The declared size is peer-controlled; a frame that claims 64MB
 			// but delivers nothing must not cost 64MB up front.

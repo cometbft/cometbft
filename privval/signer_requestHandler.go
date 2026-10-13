@@ -9,6 +9,7 @@ import (
 	privvalproto "github.com/cometbft/cometbft/proto/tendermint/privval"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/types"
+	cmterrors "github.com/cometbft/cometbft/types/errors"
 )
 
 func DefaultValidationRequestHandler(
@@ -58,7 +59,11 @@ func DefaultValidationRequestHandler(
 
 		vote := r.SignVoteRequest.Vote
 
-		err = privVal.SignVote(chainID, vote)
+		if vote == nil {
+			err = cmterrors.ErrRequiredField{Field: "vote"}
+		} else {
+			err = privVal.SignVote(chainID, vote)
+		}
 		if err != nil {
 			res = mustWrapMsg(&privvalproto.SignedVoteResponse{
 				Vote: cmtproto.Vote{}, Error: &privvalproto.RemoteSignerError{Code: 0, Description: err.Error()},
@@ -80,7 +85,11 @@ func DefaultValidationRequestHandler(
 
 		proposal := r.SignProposalRequest.Proposal
 
-		err = privVal.SignProposal(chainID, proposal)
+		if proposal == nil {
+			err = cmterrors.ErrRequiredField{Field: "proposal"}
+		} else {
+			err = privVal.SignProposal(chainID, proposal)
+		}
 		if err != nil {
 			res = mustWrapMsg(&privvalproto.SignedProposalResponse{
 				Proposal: cmtproto.Proposal{}, Error: &privvalproto.RemoteSignerError{Code: 0, Description: err.Error()},

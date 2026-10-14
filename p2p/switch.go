@@ -892,6 +892,8 @@ func (sw *Switch) addPeer(p Peer) error {
 
 	// Reactors may have reserved per-peer state in InitPeer (e.g. the
 	// mempool's peer ID slot); give it back if the peer is not added.
+	// RemovePeer identifies the peer by ID only, so it must not be used when
+	// another connection with the same ID is already in the peer set.
 	releaseReactorState := func(reason error) {
 		for _, reactor := range sw.reactors {
 			reactor.RemovePeer(p, reason)
@@ -920,7 +922,9 @@ func (sw *Switch) addPeer(p Peer) error {
 				" err ", "Peer has already errored and removal was attempted.",
 				"peer", p.ID())
 		}
-		releaseReactorState(err)
+		if !errors.As(err, &ErrSwitchDuplicatePeerID{}) {
+			releaseReactorState(err)
+		}
 		return err
 	}
 	sw.metrics.Peers.Add(float64(1))

@@ -482,15 +482,17 @@ func TestSwitch(t *testing.T) {
 			return switchA.Peers().Size() == 1
 		}, time.Second, 20*time.Millisecond, "A should see B")
 
-		// ACT: Broadcast message from A to B. B's filter should reject before
-		// proto.Unmarshal runs and before reactor.Receive is called.
-		switchA.BroadcastAsync(p2p.Envelope{
-			ChannelID: channelID,
-			Message:   &types.RequestEcho{Message: "should be filtered"},
-		})
-
-		// ASSERT #1: B's FilterMsgBytes was invoked
+		// ACT/ASSERT #1: Broadcast a message from A to B. BroadcastAsync is
+		// deliberately fire-and-forget, and peer-set membership does not imply
+		// that the underlying libp2p connection is ready to open a stream yet.
+		// Retry the broadcast while waiting for B's filter so this test does not
+		// fail when the first asynchronous send races connection establishment.
 		require.Eventually(t, func() bool {
+			switchA.BroadcastAsync(p2p.Envelope{
+				ChannelID: channelID,
+				Message:   &types.RequestEcho{Message: "should be filtered"},
+			})
+
 			return reactorB.filterCalls.Load() >= 1
 		}, 2*time.Second, 20*time.Millisecond, "filter should have been called")
 

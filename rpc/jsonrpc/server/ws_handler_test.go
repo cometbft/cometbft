@@ -22,7 +22,7 @@ func TestWebsocketManagerHandler(t *testing.T) {
 	require.NoError(t, err)
 
 	if got, want := dialResp.StatusCode, http.StatusSwitchingProtocols; got != want {
-		t.Errorf("dialResp.StatusCode = %q, want %q", got, want)
+		t.Errorf("dialResp.StatusCode = %d, want %d", got, want)
 	}
 
 	// check basic functionality works

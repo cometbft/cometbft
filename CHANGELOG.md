@@ -12,6 +12,8 @@
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`
   ([\#6074](https://github.com/cometbft/cometbft/pull/6074))
+- `[evidence]` write the committed-evidence marker and the pending-evidence deletion in one batch, so a failed write leaves the evidence pending instead of dropping it from both keyspaces and accepting it again as new
+  ([\#6073](https://github.com/cometbft/cometbft/pull/6073))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
   ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
 - `[rpc]` release WebSocket response contexts after each subscription event,

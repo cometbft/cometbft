@@ -22,6 +22,7 @@ import (
 	"github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/ed25519"
 	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cometbft/cometbft/libs/service"
 	cmtsync "github.com/cometbft/cometbft/libs/sync"
 	"github.com/cometbft/cometbft/p2p/conn"
 	p2pproto "github.com/cometbft/cometbft/proto/tendermint/p2p"
@@ -855,6 +856,125 @@ func TestSwitchInitPeerIsNotCalledBeforeRemovePeer(t *testing.T) {
 
 	// make sure reactor.RemovePeer is finished before InitPeer is called
 	assert.False(t, reactor.InitCalledBeforeRemoveFinished())
+}
+
+// countingReactor counts InitPeer/RemovePeer calls and can hold every
+// InitPeer call at a barrier so that concurrent addPeer calls all pass the
+// duplicate check before any of them reaches peers.Add.
+type countingReactor struct {
+	*BaseReactor
+
+	arrive      chan struct{} // one send per InitPeer call
+	release     chan struct{} // closed to let held InitPeer calls continue
+	initCalls   int32
+	removeCalls int32
+}
+
+func newCountingReactor(hold bool) *countingReactor {
+	r := &countingReactor{arrive: make(chan struct{}, 8), release: make(chan struct{})}
+	if !hold {
+		close(r.release)
+	}
+	r.BaseReactor = NewBaseReactor("counting", r)
+	return r
+}
+
+func (r *countingReactor) InitPeer(peer Peer) Peer {
+	atomic.AddInt32(&r.initCalls, 1)
+	r.arrive <- struct{}{}
+	<-r.release
+	return peer
+}
+
+func (*countingReactor) AddPeer(Peer) {}
+
+func (r *countingReactor) RemovePeer(Peer, any) {
+	atomic.AddInt32(&r.removeCalls, 1)
+}
+
+func newStartableMockPeer(id ID) *mockPeer {
+	mp := &mockPeer{ip: net.IP{127, 0, 0, 1}, id: id}
+	mp.BaseService = *service.NewBaseService(nil, "mockPeer", mp)
+	return mp
+}
+
+// failingStartPeer is a mockPeer whose Start fails.
+type failingStartPeer struct{ *mockPeer }
+
+func (*failingStartPeer) OnStart() error { return errors.New("start failed") }
+
+func startCountingSwitch(t *testing.T, r *countingReactor) *Switch {
+	t.Helper()
+	sw := MakeSwitch(cfg, 1, func(_ int, sw *Switch) *Switch {
+		sw.AddReactor("counting", r)
+		return sw
+	})
+	require.NoError(t, sw.Start())
+	t.Cleanup(func() {
+		if err := sw.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+	return sw
+}
+
+// A rejected duplicate must not trigger RemovePeer: reactors key their
+// state by peer ID, so it would clear the state of the connected peer.
+func TestSwitchAddPeerDuplicateIDDoesNotRemoveConnectedPeerState(t *testing.T) {
+	reactor := newCountingReactor(true)
+	sw := startCountingSwitch(t, reactor)
+
+	// Two connections for the same peer ID race into addPeer, e.g. an
+	// inbound accept and an outbound dial completing at the same time.
+	nodeKey := NodeKey{PrivKey: ed25519.GenPrivKey()}
+	id := nodeKey.ID()
+	errs := make(chan error, 2)
+	for i := 0; i < 2; i++ {
+		go func() { errs <- sw.addPeer(newStartableMockPeer(id)) }()
+	}
+
+	// Hold both calls in InitPeer until each has passed the duplicate check.
+	timeout := time.After(10 * time.Second)
+	for i := 0; i < 2; i++ {
+		select {
+		case <-reactor.arrive:
+		case <-timeout:
+			t.Fatal("timed out waiting for both addPeer calls to reach InitPeer")
+		}
+	}
+	close(reactor.release)
+
+	var failed int
+	for i := 0; i < 2; i++ {
+		select {
+		case err := <-errs:
+			if err != nil {
+				require.ErrorAs(t, err, &ErrSwitchDuplicatePeerID{})
+				failed++
+			}
+		case <-timeout:
+			t.Fatal("timed out waiting for addPeer results")
+		}
+	}
+	require.Equal(t, 1, failed, "exactly one of the racing peers must be rejected")
+
+	require.EqualValues(t, 2, atomic.LoadInt32(&reactor.initCalls))
+	require.EqualValues(t, 0, atomic.LoadInt32(&reactor.removeCalls))
+	require.Equal(t, 1, sw.Peers().Size())
+}
+
+func TestSwitchAddPeerReleasesReactorStateOnStartFailure(t *testing.T) {
+	reactor := newCountingReactor(false)
+	sw := startCountingSwitch(t, reactor)
+
+	nodeKey := NodeKey{PrivKey: ed25519.GenPrivKey()}
+	p := &failingStartPeer{newStartableMockPeer(nodeKey.ID())}
+	p.BaseService = *service.NewBaseService(nil, "failingStartPeer", p)
+
+	require.Error(t, sw.addPeer(p))
+	require.EqualValues(t, 1, atomic.LoadInt32(&reactor.initCalls))
+	require.EqualValues(t, 1, atomic.LoadInt32(&reactor.removeCalls))
+	require.Equal(t, 0, sw.Peers().Size())
 }
 
 func makeSwitchForBenchmark(b *testing.B) *Switch {

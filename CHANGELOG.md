@@ -12,6 +12,8 @@
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`
   ([\#6074](https://github.com/cometbft/cometbft/pull/6074))
+- `[p2p]` call `RemovePeer` on the reactors when `addPeer` fails to start or add a peer after `InitPeer` ran, and make the mempool's peer ID reservation idempotent, so a duplicate peer ID race no longer leaks mempool peer ID slots
+  ([\#6076](https://github.com/cometbft/cometbft/pull/6076))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
   ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
 - `[rpc]` release WebSocket response contexts after each subscription event,

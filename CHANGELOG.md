@@ -12,6 +12,8 @@
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`
   ([\#6074](https://github.com/cometbft/cometbft/pull/6074))
+- `[libs/bits]` reject bit arrays with a negative size in `ValidateBasic` (previously accepted for sizes in `[-63, -1]`), make `IsFull` safe on an empty array, and reject a negative `Round` in consensus `VoteSetBits` messages
+  ([\#6078](https://github.com/cometbft/cometbft/pull/6078))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
   ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
 - `[rpc]` release WebSocket response contexts after each subscription event,

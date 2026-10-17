@@ -12,6 +12,8 @@
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`
   ([\#6074](https://github.com/cometbft/cometbft/pull/6074))
+- `[lp2p]` enforce an idle read deadline in `StreamReadSized` and grow the receive buffer with the bytes actually delivered, so a peer that declares a large frame and then stalls can no longer pin a handler goroutine and a full-size buffer indefinitely
+  ([\#6069](https://github.com/cometbft/cometbft/pull/6069))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
   ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
 - `[rpc]` release WebSocket response contexts after each subscription event,

@@ -81,6 +81,9 @@ func (txi *TxIndex) Get(hash []byte) (*abci.TxResult, error) {
 // key that indexed from the tx's events is a composite of the event type and
 // the respective attribute's key delimited by a "." (eg. "account.number").
 // Any event with an empty type is not indexed.
+//
+// Duplicate hashes follow the same rule as Index: a failed transaction does
+// not overwrite a previously indexed successful one.
 func (txi *TxIndex) AddBatch(b *txindex.Batch) error {
 	storeBatch := txi.store.NewBatch()
 	defer storeBatch.Close()
@@ -88,8 +91,16 @@ func (txi *TxIndex) AddBatch(b *txindex.Batch) error {
 	for _, result := range b.Ops {
 		hash := types.Tx(result.Tx).Hash()
 
+		keep, err := txi.keepIndexedResult(hash, result)
+		if err != nil {
+			return err
+		}
+		if keep {
+			continue
+		}
+
 		// index tx by events
-		err := txi.indexEvents(result, hash, storeBatch)
+		err = txi.indexEvents(result, hash, storeBatch)
 		if err != nil {
 			return err
 		}
@@ -129,21 +140,16 @@ func (txi *TxIndex) Index(result *abci.TxResult) error {
 
 	hash := types.Tx(result.Tx).Hash()
 
-	if !result.Result.IsOK() {
-		oldResult, err := txi.Get(hash)
-		if err != nil {
-			return err
-		}
-
-		// if the new transaction failed and it's already indexed in an older block and was successful
-		// we skip it as we want users to get the older successful transaction when they query.
-		if oldResult != nil && oldResult.Result.Code == abci.CodeTypeOK {
-			return nil
-		}
+	keep, err := txi.keepIndexedResult(hash, result)
+	if err != nil {
+		return err
+	}
+	if keep {
+		return nil
 	}
 
 	// index tx by events
-	err := txi.indexEvents(result, hash, b)
+	err = txi.indexEvents(result, hash, b)
 	if err != nil {
 		return err
 	}
@@ -165,6 +171,23 @@ func (txi *TxIndex) Index(result *abci.TxResult) error {
 	}
 
 	return b.WriteSync()
+}
+
+// keepIndexedResult reports whether the result already indexed under hash
+// must be kept: if the new transaction failed and the indexed one for the same
+// hash was successful, we skip it so that users get the older successful
+// transaction when they query.
+func (txi *TxIndex) keepIndexedResult(hash []byte, result *abci.TxResult) (bool, error) {
+	if result.Result.IsOK() {
+		return false, nil
+	}
+
+	oldResult, err := txi.Get(hash)
+	if err != nil {
+		return false, err
+	}
+
+	return oldResult != nil && oldResult.Result.Code == abci.CodeTypeOK, nil
 }
 
 func (txi *TxIndex) indexEvents(result *abci.TxResult, hash []byte, store dbm.Batch) error {

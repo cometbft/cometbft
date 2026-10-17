@@ -600,27 +600,42 @@ func TestTxIndexDuplicatePreviouslySuccessful(t *testing.T) {
 
 	hash := mockTx.Hash()
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			indexer := NewTxIndex(db.NewMemDB())
-
-			// index the first tx
-			err := indexer.Index(tc.tx1)
-			require.NoError(t, err)
-
-			// index the same tx with different results
-			err = indexer.Index(tc.tx2)
-			require.NoError(t, err)
-
-			res, err := indexer.Get(hash)
-			require.NoError(t, err)
-
-			if tc.expOverwrite {
-				require.Equal(t, tc.tx2, res)
-			} else {
-				require.Equal(t, tc.tx1, res)
+	// Index and AddBatch (one batch per block, as IndexerService uses it)
+	// must apply the same overwrite rule.
+	indexFns := map[string]func(*TxIndex, *abci.TxResult) error{
+		"Index": (*TxIndex).Index,
+		"AddBatch": func(indexer *TxIndex, result *abci.TxResult) error {
+			batch := txindex.NewBatch(1)
+			if err := batch.Add(result); err != nil {
+				return err
 			}
-		})
+			return indexer.AddBatch(batch)
+		},
+	}
+
+	for _, tc := range testCases {
+		for fnName, indexFn := range indexFns {
+			t.Run(fnName+"/"+tc.name, func(t *testing.T) {
+				indexer := NewTxIndex(db.NewMemDB())
+
+				// index the first tx
+				err := indexFn(indexer, tc.tx1)
+				require.NoError(t, err)
+
+				// index the same tx with different results
+				err = indexFn(indexer, tc.tx2)
+				require.NoError(t, err)
+
+				res, err := indexer.Get(hash)
+				require.NoError(t, err)
+
+				if tc.expOverwrite {
+					require.Equal(t, tc.tx2, res)
+				} else {
+					require.Equal(t, tc.tx1, res)
+				}
+			})
+		}
 	}
 }
 

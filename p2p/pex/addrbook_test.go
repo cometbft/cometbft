@@ -439,6 +439,30 @@ func TestBanBadPeers(t *testing.T) {
 	assert.False(t, book.IsGood(addr))
 }
 
+func TestReinstateBadPeerPromotedToOld(t *testing.T) {
+	fname := createTempFileName("addrbook_test")
+	defer deleteTempFile(fname)
+
+	book := NewAddrBook(fname, true)
+	book.SetLogger(log.TestingLogger())
+
+	addr := randIPv4Address(t)
+	require.NoError(t, book.AddAddress(addr, addr))
+	book.MarkGood(addr.ID)
+	require.True(t, book.IsGood(addr))
+
+	book.MarkBad(addr, 50*time.Millisecond)
+	require.True(t, book.IsBanned(addr))
+
+	time.Sleep(100 * time.Millisecond)
+	book.ReinstateBadPeers()
+
+	// a reinstated address goes back to a new bucket
+	assert.EqualValues(t, 1, book.Size())
+	assert.True(t, book.HasAddress(addr))
+	assert.False(t, book.IsGood(addr))
+}
+
 func TestAddrBookEmpty(t *testing.T) {
 	fname := createTempFileName("addrbook_test")
 	defer deleteTempFile(fname)

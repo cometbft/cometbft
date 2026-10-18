@@ -684,6 +684,47 @@ func TestPruneBlocks(t *testing.T) {
 	assert.Nil(t, bs.LoadBlock(1501))
 }
 
+func TestPruneBlocksKeepsHashIndexForRetainedMeta(t *testing.T) {
+	config := test.ResetTestRoot("blockchain_reactor_test")
+	defer os.RemoveAll(config.RootDir)
+	stateStore := sm.NewStore(dbm.NewMemDB(), sm.StoreOptions{
+		DiscardABCIResponses: false,
+	})
+	state, err := stateStore.LoadFromDBOrGenesisFile(config.GenesisFile())
+	require.NoError(t, err)
+	bs := NewBlockStore(dbm.NewMemDB())
+
+	hashes := make(map[int64][]byte)
+	for h := int64(1); h <= 100; h++ {
+		block, err := state.MakeBlock(h, test.MakeNTxs(h, 10), new(types.Commit), nil, state.Validators.GetProposer().Address)
+		require.NoError(t, err)
+		partSet, err := block.MakePartSet(types.BlockPartSizeBytes)
+		require.NoError(t, err)
+		bs.SaveBlockWithExtendedCommit(block, partSet, makeTestExtCommit(h, cmttime.Now()))
+		hashes[h] = block.Hash()
+	}
+
+	state.LastBlockTime = time.Date(2020, 1, 1, 1, 0, 0, 0, time.UTC)
+	state.LastBlockHeight = 100
+	state.ConsensusParams.Evidence.MaxAgeNumBlocks = 20
+	state.ConsensusParams.Evidence.MaxAgeDuration = 1 * time.Second
+
+	_, evidenceRetainHeight, err := bs.PruneBlocks(90, state)
+	require.NoError(t, err)
+	require.EqualValues(t, 80, evidenceRetainHeight)
+
+	// metas inside the evidence window are kept, so they must stay reachable by hash too
+	for h := evidenceRetainHeight; h < 90; h++ {
+		require.NotNil(t, bs.LoadBlockMeta(h))
+		meta := bs.LoadBlockMetaByHash(hashes[h])
+		require.NotNil(t, meta, "height %d", h)
+		require.Equal(t, h, meta.Header.Height)
+	}
+	// metas that were pruned are gone from the index as well
+	require.Nil(t, bs.LoadBlockMeta(79))
+	require.Nil(t, bs.LoadBlockMetaByHash(hashes[79]))
+}
+
 func TestLoadBlockMeta(t *testing.T) {
 	bs, db := newInMemoryBlockStore()
 	height := int64(10)

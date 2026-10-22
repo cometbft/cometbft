@@ -1161,6 +1161,32 @@ func TestMedianTime(t *testing.T) {
 		require.Equal(t, medianTime, now.Add(1*time.Minute))
 	})
 
+	t.Run("out-of-order signatures preserve weighted median", func(t *testing.T) {
+		vals := types.NewValidatorSet([]*types.Validator{
+			types.NewValidator(ed25519.GenPrivKey().PubKey(), 60),
+			types.NewValidator(ed25519.GenPrivKey().PubKey(), 30),
+			types.NewValidator(ed25519.GenPrivKey().PubKey(), 10),
+		})
+		now := time.Unix(1_700_000_000, 0).UTC()
+		signatures := make([]types.CommitSig, len(vals.Validators))
+		for i, val := range vals.Validators {
+			signatures[i] = types.CommitSig{
+				BlockIDFlag:      types.BlockIDFlagCommit,
+				ValidatorAddress: val.Address,
+				Timestamp:        now.Add(time.Duration(i) * time.Minute),
+			}
+		}
+		commit := &types.Commit{Height: 1, Signatures: signatures}
+		orderedMedian, err := sm.MedianTime(commit, vals)
+		require.NoError(t, err)
+		require.Equal(t, now, orderedMedian)
+
+		commit.Signatures = []types.CommitSig{signatures[1], signatures[2], signatures[0]}
+		medianTime, err := sm.MedianTime(commit, vals)
+		require.NoError(t, err)
+		require.Equal(t, orderedMedian, medianTime)
+	})
+
 	t.Run("validator not in validator set", func(t *testing.T) {
 		unknownVal := ed25519.GenPrivKey().PubKey().Address()
 		now := time.Now()
@@ -1239,4 +1265,31 @@ func TestMedianTime(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, now, medianTime)
 	})
+}
+
+func BenchmarkMedianTime(b *testing.B) {
+	for _, numValidators := range []int{20, 100, 1000, 5000} {
+		b.Run(fmt.Sprintf("validators=%d", numValidators), func(b *testing.B) {
+			vals, _ := types.RandValidatorSet(numValidators, 1)
+			now := time.Now()
+			signatures := make([]types.CommitSig, numValidators)
+			for i, val := range vals.Validators {
+				signatures[i] = types.CommitSig{
+					BlockIDFlag:      types.BlockIDFlagCommit,
+					ValidatorAddress: val.Address,
+					Timestamp:        now,
+				}
+			}
+			commit := &types.Commit{Height: 1, Signatures: signatures}
+
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				_, err := sm.MedianTime(commit, vals)
+				if err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+	}
 }

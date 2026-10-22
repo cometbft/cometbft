@@ -29,6 +29,7 @@
 - `[state]` use fast validator loading for `BlockExecutor` commit-info paths,
   avoiding unnecessary proposer-priority reconstruction on cache misses
   ([\#6039](https://github.com/cometbft/cometbft/pull/6039))
+- `[types]` \#6115 Avoid repeated validator lookups while checking ABCI voting-power updates (@Grivn)
 
 ### FEATURES
 

@@ -185,10 +185,16 @@ func (s *Server) subscribe(ctx context.Context, clientID string, query Query, ou
 	select {
 	case s.cmds <- cmd{op: sub, clientID: clientID, query: query, subscription: subscription}:
 		s.mtx.Lock()
-		if _, ok = s.subscriptions[clientID]; !ok {
-			s.subscriptions[clientID] = make(map[string]struct{})
+		// The loop may have already evicted the subscription before we got
+		// the lock. Registering it now would leave an entry nothing removes.
+		select {
+		case <-subscription.Canceled():
+		default:
+			if _, ok = s.subscriptions[clientID]; !ok {
+				s.subscriptions[clientID] = make(map[string]struct{})
+			}
+			s.subscriptions[clientID][query.String()] = struct{}{}
 		}
-		s.subscriptions[clientID][query.String()] = struct{}{}
 		s.mtx.Unlock()
 		return subscription, nil
 	case <-ctx.Done():
@@ -298,6 +304,12 @@ type state struct {
 	queries map[string]*queryPlusRefCount
 }
 
+// clientQuery identifies a subscription by client and query string.
+type clientQuery struct {
+	clientID string
+	query    string
+}
+
 // queryPlusRefCount holds a pointer to a query and reference counter. When
 // refCount is zero, query will be removed.
 type queryPlusRefCount struct {
@@ -335,10 +347,32 @@ loop:
 		case sub:
 			state.add(cmd.clientID, cmd.query, cmd.subscription)
 		case pub:
-			if err := state.send(cmd.msg, cmd.events); err != nil {
+			full, err := state.send(cmd.msg, cmd.events)
+			if err != nil {
 				s.Logger.Error("Error querying for events", "err", err)
 			}
+			s.evict(&state, full)
 		}
+	}
+}
+
+// evict cancels the given subscriptions with ErrOutOfCapacity and removes them
+// from s.subscriptions. Both happen under s.mtx, so a client that sees the
+// cancellation can subscribe to the same query again, and a concurrent
+// subscribe does not register a subscription that is already canceled.
+func (s *Server) evict(state *state, subs []clientQuery) {
+	if len(subs) == 0 {
+		return
+	}
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	for _, sub := range subs {
+		clientSubscriptions := s.subscriptions[sub.clientID]
+		delete(clientSubscriptions, sub.query)
+		if len(clientSubscriptions) == 0 {
+			delete(s.subscriptions, sub.clientID)
+		}
+		state.remove(sub.clientID, sub.query, ErrOutOfCapacity)
 	}
 }
 
@@ -404,13 +438,16 @@ func (state *state) removeAll(reason error) {
 	}
 }
 
-func (state *state) send(msg any, events map[string][]string) error {
+// send delivers msg to every subscription whose query matches events. It
+// returns the buffered subscriptions that were full and need to be evicted.
+func (state *state) send(msg any, events map[string][]string) ([]clientQuery, error) {
+	var full []clientQuery
 	for qStr, clientSubscriptions := range state.subscriptions {
 		q := state.queries[qStr].q
 
 		match, err := q.Matches(events)
 		if err != nil {
-			return fmt.Errorf("failed to match against query %s: %w", q.String(), err)
+			return full, fmt.Errorf("failed to match against query %s: %w", q.String(), err)
 		}
 
 		if match {
@@ -423,12 +460,12 @@ func (state *state) send(msg any, events map[string][]string) error {
 					select {
 					case subscription.out <- NewMessage(msg, events):
 					default:
-						state.remove(clientID, qStr, ErrOutOfCapacity)
+						full = append(full, clientQuery{clientID: clientID, query: qStr})
 					}
 				}
 			}
 		}
 	}
 
-	return nil
+	return full, nil
 }

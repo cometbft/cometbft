@@ -507,3 +507,30 @@ func assertCancelled(t *testing.T, subscription *pubsub.Subscription, err error)
 	assert.False(t, ok)
 	assert.Equal(t, err, subscription.Err())
 }
+
+func TestSlowClientCanResubscribeAfterErrOutOfCapacity(t *testing.T) {
+	s := pubsub.NewServer()
+	s.SetLogger(log.TestingLogger())
+	require.NoError(t, s.Start())
+	t.Cleanup(func() {
+		if err := s.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	ctx := context.Background()
+	subscription, err := s.Subscribe(ctx, clientID, query.All)
+	require.NoError(t, err)
+	require.NoError(t, s.Publish(ctx, "Fat Cobra"))
+	require.NoError(t, s.Publish(ctx, "Viper"))
+	assertCancelled(t, subscription, pubsub.ErrOutOfCapacity)
+
+	// The canceled subscription must no longer count against the client.
+	assert.Equal(t, 0, s.NumClientSubscriptions(clientID))
+
+	// The client must be able to subscribe to the same query again.
+	subscription, err = s.Subscribe(ctx, clientID, query.All)
+	require.NoError(t, err)
+	require.NoError(t, s.Publish(ctx, "Hulk"))
+	assertReceive(t, "Hulk", subscription.Out())
+}

@@ -23,6 +23,8 @@
   instead of silently dropping the condition and widening the results to
   rows the query explicitly excludes
   ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
+- `[store]` keep the block hash index for block metas retained in the evidence window when pruning
+  ([\#6109](https://github.com/cometbft/cometbft/pull/6109))
 
 ### IMPROVEMENTS
 

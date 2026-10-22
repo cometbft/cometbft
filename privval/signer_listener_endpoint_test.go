@@ -2,7 +2,9 @@ package privval
 
 import (
 	"errors"
+	"io"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -317,4 +319,76 @@ func (l *testListener) Accept() (net.Conn, error) {
 	}
 
 	return nil, nil // Note this doesn't actually return a valid connection, it just doesn't error.
+}
+
+// acceptOnceListener hands out a single pre-made connection and then blocks
+// until it is closed, mimicking a remote signer that dialed in exactly once.
+type acceptOnceListener struct {
+	net.Listener
+	conn     net.Conn
+	accepted chan struct{}
+	closed   chan struct{}
+	once     sync.Once
+}
+
+func (l *acceptOnceListener) Accept() (net.Conn, error) {
+	var conn net.Conn
+	l.once.Do(func() {
+		conn = l.conn
+		close(l.accepted)
+	})
+	if conn != nil {
+		return conn, nil
+	}
+	<-l.closed
+	return nil, errors.New("listener closed")
+}
+
+func (l *acceptOnceListener) Close() error {
+	select {
+	case <-l.closed:
+	default:
+		close(l.closed)
+	}
+	return nil
+}
+
+func (l *acceptOnceListener) Addr() net.Addr { return nil }
+
+func TestSignerListenerEndpointClosesUnconsumedConnOnStop(t *testing.T) {
+	client, server := net.Pipe()
+	defer client.Close()
+
+	ln := &acceptOnceListener{
+		conn:     server,
+		accepted: make(chan struct{}),
+		closed:   make(chan struct{}),
+	}
+	sle := NewSignerListenerEndpoint(log.TestingLogger(), ln)
+	require.NoError(t, sle.Start())
+
+	// Wait until serviceLoop has accepted the connection. Nothing calls
+	// SendRequest/WaitForConnection, so it is now blocked handing the
+	// connection over on connectionAvailableCh.
+	select {
+	case <-ln.accepted:
+	case <-time.After(time.Second):
+		t.Fatal("listener never accepted the connection")
+	}
+
+	require.NoError(t, sle.Stop())
+
+	// The accepted connection was never handed to a consumer, so Stop must
+	// close it; the peer then observes EOF instead of hanging.
+	errCh := make(chan error, 1)
+	go func() {
+		_, err := client.Read(make([]byte, 1))
+		errCh <- err
+	}()
+	select {
+	case err := <-errCh:
+		require.ErrorIs(t, err, io.EOF)
+	case <-time.After(time.Second):
+		t.Fatal("accepted connection was not closed on Stop")
+	}
 }

@@ -175,6 +175,9 @@ func (s *SocketServer) waitForClose(closeConn chan error, connID int) {
 
 // Read requests from conn and deal with them
 func (s *SocketServer) handleRequests(closeConn chan error, conn io.Reader, responses chan<- *types.Response) {
+	// handleRequests is the only sender, so closing tells handleResponses to stop
+	defer close(responses)
+
 	bufReader := bufio.NewReader(conn)
 
 	locked := false // true only while appMtx is held inside the loop
@@ -339,7 +342,10 @@ func (s *SocketServer) handleRequest(ctx context.Context, req *types.Request) (*
 func (s *SocketServer) handleResponses(closeConn chan error, conn io.Writer, responses <-chan *types.Response) {
 	bufWriter := bufio.NewWriter(conn)
 	for {
-		res := <-responses
+		res, ok := <-responses
+		if !ok {
+			return
+		}
 		err := types.WriteMessage(res, bufWriter)
 		if err != nil {
 			closeConn <- fmt.Errorf("error writing message: %w", err)

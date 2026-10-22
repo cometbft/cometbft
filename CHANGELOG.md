@@ -8,6 +8,8 @@
 
 ### BUG FIXES
 
+- `[abci/server]` close the responses channel when a socket connection ends so its `handleResponses` goroutine exits instead of leaking
+  ([\#6111](https://github.com/cometbft/cometbft/pull/6111))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`

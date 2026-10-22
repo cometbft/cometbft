@@ -1965,6 +1965,9 @@ func (m *VoteSetBitsMessage) ValidateBasic() error {
 	if m.Height < 0 {
 		return cmterrors.ErrNegativeField{Field: "Height"}
 	}
+	if m.Round < 0 {
+		return cmterrors.ErrNegativeField{Field: "Round"}
+	}
 	if !types.IsVoteTypeValid(m.Type) {
 		return cmterrors.ErrInvalidField{Field: "Type"}
 	}

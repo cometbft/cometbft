@@ -885,7 +885,9 @@ paths:
             example: '"tx.height=1000"'
         - in: query
           name: prove
-          description: Include proofs of the transactions inclusion in the block
+          description: |
+            Include proofs of the transactions inclusion in the block.
+            Proofs for transactions in the same block are computed together for each page.
           required: false
           schema:
             type: boolean

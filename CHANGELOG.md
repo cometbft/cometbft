@@ -26,6 +26,8 @@
 
 ### IMPROVEMENTS
 
+- `[rpc]` \#6119 reuse the block and Merkle proofs when a `/tx_search` page includes
+  multiple transactions from the same block, reducing repeated reads and hashing (@Grivn)
 - `[state]` use fast validator loading for `BlockExecutor` commit-info paths,
   avoiding unnecessary proposer-priority reconstruction on cache misses
   ([\#6039](https://github.com/cometbft/cometbft/pull/6039))

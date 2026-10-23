@@ -29,6 +29,9 @@
 - `[state]` use fast validator loading for `BlockExecutor` commit-info paths,
   avoiding unnecessary proposer-priority reconstruction on cache misses
   ([\#6039](https://github.com/cometbft/cometbft/pull/6039))
+- `[state/txindex]` avoid repeatedly loading and decoding a transaction when
+  several of its events match the same search query
+  ([\#6121](https://github.com/cometbft/cometbft/issues/6121))
 
 ### FEATURES
 

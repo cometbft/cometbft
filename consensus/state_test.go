@@ -1683,12 +1683,13 @@ func TestPrepareProposalReceivesVoteExtensions(t *testing.T) {
 	}
 	signAddVotes(cs1, cmtproto.PrevoteType, blockID.Hash, blockID.PartSetHeader, false, vss[1:]...)
 
-	// create a precommit for each validator with the associated vote extension.
+	// Wait for cs1's own prevote before adding precommits, otherwise the +2/3
+	// precommits can make cs1 skip its prevote (a flaky race).
+	ensurePrevote(voteCh, height, round)
+
 	for i, vs := range vss[1:] {
 		signAddPrecommitWithExtension(t, cs1, blockID.Hash, blockID.PartSetHeader, voteExtensions[i+1], vs)
 	}
-
-	ensurePrevote(voteCh, height, round)
 
 	// ensure that the height is committed.
 	ensurePrecommitMatch(t, voteCh, height, round, blockID.Hash)

@@ -639,6 +639,53 @@ func TestTxIndexDuplicatePreviouslySuccessful(t *testing.T) {
 	}
 }
 
+// A proposer can include the same tx twice in one block, so AddBatch must
+// apply the duplicate rule within a single batch too.
+func TestTxIndexDuplicateInSameBatch(t *testing.T) {
+	mockTx := types.Tx("MOCK_TX_HASH")
+
+	result := func(index uint32, code uint32) *abci.TxResult {
+		return &abci.TxResult{
+			Height: 1,
+			Index:  index,
+			Tx:     mockTx,
+			Result: abci.ExecTxResult{Code: code},
+		}
+	}
+
+	testCases := []struct {
+		name         string
+		code1, code2 uint32
+		expOverwrite bool
+	}{
+		{"don't overwrite a successful tx with a later failed one", abci.CodeTypeOK, abci.CodeTypeOK + 1, false},
+		{"overwrite a failed tx with a later successful one", abci.CodeTypeOK + 1, abci.CodeTypeOK, true},
+		{"overwrite a failed tx with a later failed one", abci.CodeTypeOK + 1, abci.CodeTypeOK + 2, true},
+		{"overwrite a successful tx with a later successful one", abci.CodeTypeOK, abci.CodeTypeOK, true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			indexer := NewTxIndex(db.NewMemDB())
+			tx1, tx2 := result(0, tc.code1), result(1, tc.code2)
+
+			batch := txindex.NewBatch(2)
+			require.NoError(t, batch.Add(tx1))
+			require.NoError(t, batch.Add(tx2))
+			require.NoError(t, indexer.AddBatch(batch))
+
+			res, err := indexer.Get(mockTx.Hash())
+			require.NoError(t, err)
+
+			if tc.expOverwrite {
+				require.Equal(t, tx2, res)
+			} else {
+				require.Equal(t, tx1, res)
+			}
+		})
+	}
+}
+
 func TestTxSearchMultipleTxs(t *testing.T) {
 	indexer := NewTxIndex(db.NewMemDB())
 

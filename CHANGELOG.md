@@ -12,7 +12,7 @@
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`
   ([\#6074](https://github.com/cometbft/cometbft/pull/6074))
-- `[state/txindex]` apply the same duplicate-hash rule in `AddBatch` as in `Index`, so a failed transaction indexed in a later block no longer overwrites the successful result of an earlier one with the same hash
+- `[state/txindex]` apply the same duplicate-hash rule in `AddBatch` as in `Index`, so a failed transaction no longer overwrites the successful result of an earlier one with the same hash, including duplicates within the same block
   ([\#6072](https://github.com/cometbft/cometbft/pull/6072))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
   ([\#6053](https://github.com/cometbft/cometbft/pull/6053))

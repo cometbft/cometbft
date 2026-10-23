@@ -83,13 +83,24 @@ func (txi *TxIndex) Get(hash []byte) (*abci.TxResult, error) {
 // Any event with an empty type is not indexed.
 //
 // Duplicate hashes follow the same rule as Index: a failed transaction does
-// not overwrite a previously indexed successful one.
+// not overwrite a previously indexed successful one, whether that one was
+// indexed in an earlier batch or earlier in this batch.
 func (txi *TxIndex) AddBatch(b *txindex.Batch) error {
 	storeBatch := txi.store.NewBatch()
 	defer storeBatch.Close()
 
+	// hashes of successful transactions written earlier in this batch, which
+	// txi.Get cannot see until the batch is written
+	okInBatch := make(map[string]struct{})
+
 	for _, result := range b.Ops {
 		hash := types.Tx(result.Tx).Hash()
+
+		if !result.Result.IsOK() {
+			if _, ok := okInBatch[string(hash)]; ok {
+				continue
+			}
+		}
 
 		keep, err := txi.keepIndexedResult(hash, result)
 		if err != nil {
@@ -119,6 +130,10 @@ func (txi *TxIndex) AddBatch(b *txindex.Batch) error {
 		err = storeBatch.Set(hash, rawBytes)
 		if err != nil {
 			return err
+		}
+
+		if result.Result.IsOK() {
+			okInBatch[string(hash)] = struct{}{}
 		}
 	}
 

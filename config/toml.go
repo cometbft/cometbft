@@ -343,10 +343,10 @@ enabled = {{ .P2P.LibP2PConfig.Enabled }}
 
 # Bootstrap peers to connect to
 # format: { host, id, private (opt), persistent (opt), unconditional (opt) }
-{{- $bps := .P2P.LibP2PConfig.BootstrapPeers -}}
-{{- if eq (len $bps) 0 -}}
+{{- $bps := .P2P.LibP2PConfig.BootstrapPeers }}
+{{- if eq (len $bps) 0 }}
 bootstrap_peers = []
-{{ else }}
+{{- else }}
 bootstrap_peers = [{{ range $bps }}
   {{ .ToTOMLInlineString }},
 {{- end }}

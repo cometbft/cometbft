@@ -8,6 +8,9 @@
 
 ### BUG FIXES
 
+- `[config]` render `bootstrap_peers` on its own line in the generated `config.toml`;
+  template trim markers had joined it onto the preceding comment line, so TOML parsers ignored it
+  ([\#5991](https://github.com/cometbft/cometbft/issues/5991))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`

@@ -143,3 +143,33 @@ func TestGRPC(t *testing.T) {
 		t.Log("response", counter)
 	}
 }
+
+// TestGRPCStopRacesAsyncCheckTx stops the client while many async CheckTx
+// calls are completing. Before the fix, a call finishing after Stop closed the
+// ordering channel panicked with "send on closed channel".
+func TestGRPCStopRacesAsyncCheckTx(t *testing.T) {
+	socketFile := fmt.Sprintf("/tmp/test-%08x.sock", rand.Int31n(1<<30))
+	defer os.Remove(socketFile)
+	socket := fmt.Sprintf("unix://%v", socketFile)
+
+	server := abciserver.NewGRPCServer(socket, types.NewBaseApplication())
+	server.SetLogger(log.TestingLogger().With("module", "abci-server"))
+	require.NoError(t, server.Start())
+	t.Cleanup(func() { _ = server.Stop() })
+
+	for i := 0; i < 20; i++ {
+		c := abcicli.NewGRPCClient(socket, true)
+		require.NoError(t, c.Start())
+
+		var wg sync.WaitGroup
+		for j := 0; j < 50; j++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				_, _ = c.CheckTxAsync(context.Background(), &types.RequestCheckTx{Tx: []byte("tx")})
+			}()
+		}
+		_ = c.Stop()
+		wg.Wait()
+	}
+}

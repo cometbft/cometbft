@@ -23,6 +23,10 @@
   instead of silently dropping the condition and widening the results to
   rows the query explicitly excludes
   ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
+- `[abci/client]` fix "send on closed channel" panic in the gRPC client when
+  stopped while an async `CheckTx` call is completing; the call now returns an
+  error instead
+  ([\#XXXX](https://github.com/cometbft/cometbft/pull/XXXX))
 
 ### IMPROVEMENTS
 

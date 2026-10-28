@@ -26,7 +26,7 @@
 - `[abci/client]` fix "send on closed channel" panic in the gRPC client when
   stopped while an async `CheckTx` call is completing; the call now returns an
   error instead
-  ([\#XXXX](https://github.com/cometbft/cometbft/pull/XXXX))
+  ([\#6128](https://github.com/cometbft/cometbft/pull/6128))
 
 ### IMPROVEMENTS
 

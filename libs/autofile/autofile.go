@@ -94,6 +94,9 @@ func (af *AutoFile) Close() error {
 	af.closeTicker.Stop()
 	close(af.closeTickerStopc)
 	if af.hupc != nil {
+		// Unregister before closing: the runtime keeps delivering to a
+		// registered channel, and sending on a closed one panics.
+		signal.Stop(af.hupc)
 		close(af.hupc)
 	}
 	return af.closeFile()

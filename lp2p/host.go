@@ -190,6 +190,10 @@ func BootstrapPeersFromConfig(config config.LibP2PConfig) (map[peer.ID]Bootstrap
 	return peers, nil
 }
 
+// systemConnsPerPeer is the per-peer connection budget used to size the
+// system-wide connection limit in custom limits mode.
+const systemConnsPerPeer = 4
+
 // ResourceManagerFromConfig creates a resource manager from the given config.
 func ResourceManagerFromConfig(cfg config.LibP2PConfig) (network.ResourceManager, rcmgr.Limiter, error) {
 	if cfg.Limits.Mode == config.LibP2PLimitsModeDisabled {
@@ -214,6 +218,7 @@ func ResourceManagerFromConfig(cfg config.LibP2PConfig) (network.ResourceManager
 		var (
 			partialDefaults = defaults.AutoScale().ToPartialLimitConfig()
 			limits          = rcmgr.InfiniteLimits.ToPartialLimitConfig()
+			maxPeers        = rcmgr.LimitVal(cfg.Limits.MaxPeers)
 			maxPeerStreams  = rcmgr.LimitVal(cfg.Limits.MaxPeerStreams)
 		)
 
@@ -228,8 +233,10 @@ func ResourceManagerFromConfig(cfg config.LibP2PConfig) (network.ResourceManager
 		limits.PeerDefault.ConnsInbound = partialDefaults.PeerDefault.ConnsInbound
 		limits.PeerDefault.ConnsOutbound = partialDefaults.PeerDefault.ConnsOutbound
 
-		// 2.1 limit max system connections to (max conns per peer * max peers)
-		limits.System.Conns = partialDefaults.PeerDefault.Conns * maxPeerStreams
+		// 2.1 limit max system connections to (max peers * conns per peer).
+		// Peers normally hold a single multiplexed connection; the small
+		// constant leaves room for a reconnect while the old one drains.
+		limits.System.Conns = maxPeers * systemConnsPerPeer
 
 		// 3. set max streams
 		// https://github.com/libp2p/go-libp2p/blob/da810a1/p2p/host/resource-manager/scope.go#L168

@@ -192,3 +192,43 @@ func TestParseValid(t *testing.T) {
 		}
 	}
 }
+
+// tx.height and block.height are uint64 block heights; an equality
+// condition on either must fail to parse rather than produce a condition no
+// real height can ever satisfy. See PR #6044.
+func TestParseHeightEquality(t *testing.T) {
+	tests := []struct {
+		input string
+		valid bool
+	}{
+		{"tx.height = 5", true},
+		{"block.height = 5", true},
+		{"tx.height = 0", true},
+		{"tx.height = 18446744073709551615", true}, // math.MaxUint64
+		{"tx.height = 'something'", false},
+		{"block.height = 'nope'", false},
+		{"tx.height = -5", false},
+		{"block.height = -5", false},
+		{"tx.height = 5.5", false},
+		{"block.height = 5.5", false},
+		{"tx.height = 18446744073709551616", false}, // overflows uint64
+		{"tx.height = DATE 2021-11-23", false},
+		{"tx.height = TIME 2021-11-23T15:16:17Z", false},
+
+		// non-equality comparisons are untouched by this check; the grammar
+		// already restricts their argument to TNumber/TTime/TDate.
+		{"tx.height > 5", true},
+		{"tx.height >= 5", true},
+
+		// a non-numeric duplicate must still fail to parse even when a
+		// numeric height equality precedes it in the same query.
+		{"tx.height = 1 AND tx.height = 'something'", false},
+	}
+
+	for _, test := range tests {
+		_, err := syntax.Parse(test.input)
+		if test.valid != (err == nil) {
+			t.Errorf("Parse %#q: valid %v got err=%v", test.input, test.valid, err)
+		}
+	}
+}

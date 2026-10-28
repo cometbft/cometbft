@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -125,6 +126,15 @@ func (a *Arg) Value() string {
 	return a.text
 }
 
+// txHeightTag and blockHeightTag mirror types.TxHeightKey and
+// types.BlockHeightKey. They can't be imported here: types depends on this
+// package transitively (types -> libs/pubsub/query -> syntax), so importing
+// types back would be a cycle.
+const (
+	txHeightTag    = "tx.height"
+	blockHeightTag = "block.height"
+)
+
 // Parser is a query expression parser. The grammar for query expressions is
 // defined in the syntax package documentation.
 type Parser struct {
@@ -187,6 +197,16 @@ func (p *Parser) parseCond() (Condition, error) {
 		return cond, err
 	}
 	cond.Arg = &Arg{Type: p.scanner.Token(), text: p.scanner.Text()}
+
+	// tx.height and block.height are uint64 block heights; reject an
+	// equality condition up front if the argument isn't one, instead of
+	// producing a condition no real height can ever satisfy (or, for a
+	// fractional/overflowing literal, one that silently truncates).
+	if cond.Op == TEq && (cond.Tag == txHeightTag || cond.Tag == blockHeightTag) {
+		if _, err := strconv.ParseUint(cond.Arg.text, 10, 64); err != nil {
+			return cond, fmt.Errorf("offset %d: %s must be compared against a numeric height, got %s", p.scanner.Pos(), cond.Tag, cond.Arg.String())
+		}
+	}
 	return cond, nil
 }
 

@@ -44,9 +44,9 @@ type BlockExecutor struct {
 	// 1-element cache of validated blocks
 	lastValidatedBlock atomic.Pointer[types.Block]
 
-	// 1-element cache: validator set loaded for the current block cycle.
-	// The stored ValidatorSet is read-only; callers must not mutate it.
-	lastLoadedValidators atomic.Pointer[cachedValidators]
+	// Commit-info validator sets may have unadvanced proposer priorities and
+	// must not be used for proposer selection or mutated.
+	lastLoadedCommitInfoValidators atomic.Pointer[cachedCommitInfoValidators]
 
 	logger log.Logger
 
@@ -56,7 +56,7 @@ type BlockExecutor struct {
 	blockTimeTolerance time.Duration
 }
 
-type cachedValidators struct {
+type cachedCommitInfoValidators struct {
 	height int64
 	valSet *types.ValidatorSet
 }
@@ -576,15 +576,16 @@ func buildLastCommitInfoFromStore(block *types.Block, store Store, initialHeight
 	return BuildLastCommitInfo(block, lastValSet, initialHeight)
 }
 
-func (blockExec *BlockExecutor) loadValidatorsCached(height int64) (*types.ValidatorSet, error) {
-	if entry := blockExec.lastLoadedValidators.Load(); entry != nil && entry.height == height {
+// note: set.Validators[i].ProposerPriority and set.Proposer are stale to avoid extra computations
+func (blockExec *BlockExecutor) loadValidatorsForCommitInfoCached(height int64) (*types.ValidatorSet, error) {
+	if entry := blockExec.lastLoadedCommitInfoValidators.Load(); entry != nil && entry.height == height {
 		return entry.valSet, nil
 	}
-	valSet, err := blockExec.store.LoadValidators(height)
+	valSet, err := loadValidatorsForCommitInfo(blockExec.store, height)
 	if err != nil {
 		return nil, err
 	}
-	blockExec.lastLoadedValidators.Store(&cachedValidators{height: height, valSet: valSet})
+	blockExec.lastLoadedCommitInfoValidators.Store(&cachedCommitInfoValidators{height: height, valSet: valSet})
 	return valSet, nil
 }
 
@@ -592,7 +593,7 @@ func (blockExec *BlockExecutor) buildLastCommitInfo(block *types.Block, initialH
 	if block.Height == initialHeight {
 		return abci.CommitInfo{}
 	}
-	lastValSet, err := blockExec.loadValidatorsCached(block.Height - 1)
+	lastValSet, err := blockExec.loadValidatorsForCommitInfoCached(block.Height - 1)
 	if err != nil {
 		panic(fmt.Errorf("failed to load validator set at height %d: %w", block.Height-1, err))
 	}
@@ -603,7 +604,7 @@ func (blockExec *BlockExecutor) buildExtendedCommitInfo(ec *types.ExtendedCommit
 	if ec.Height < initialHeight {
 		return abci.ExtendedCommitInfo{}
 	}
-	valSet, err := blockExec.loadValidatorsCached(ec.Height)
+	valSet, err := blockExec.loadValidatorsForCommitInfoCached(ec.Height)
 	if err != nil {
 		panic(fmt.Errorf("failed to load validator set at height %d, initial height %d: %w", ec.Height, initialHeight, err))
 	}

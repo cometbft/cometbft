@@ -1,6 +1,8 @@
 package lp2p
 
 import (
+	"sort"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -11,6 +13,7 @@ import (
 	"github.com/cometbft/cometbft/p2p/conn"
 	tmp2p "github.com/cometbft/cometbft/proto/tendermint/p2p"
 	"github.com/cometbft/cometbft/test/utils"
+	"github.com/go-kit/kit/metrics"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -174,6 +177,90 @@ func TestReactorSet(t *testing.T) {
 		assert.Len(t, reactorB.receivedEnvelopes(), 0)
 	})
 
+	t.Run("receiveBoundedQueue", func(t *testing.T) {
+		const (
+			globalCap   = 16
+			overrideCap = 8
+			highs       = 4
+			extraLows   = 3
+		)
+		explicitUnbounded, capped := 0, overrideCap
+
+		for _, tc := range []struct {
+			name        string
+			overrides   []config.LibP2PScalerOverride
+			expectedCap int // 0 means unbounded
+		}{
+			{name: "globalCap", expectedCap: globalCap},
+			{
+				// nil MaxQueueSize mirrors a config.toml written before the field existed
+				name:        "partialOverrideInheritsGlobalCap",
+				overrides:   []config.LibP2PScalerOverride{{Reactor: "A", ThresholdLatency: 999 * time.Millisecond}},
+				expectedCap: globalCap,
+			},
+			{
+				name:        "overrideCapBeatsGlobalCap",
+				overrides:   []config.LibP2PScalerOverride{{Reactor: "A", MaxQueueSize: &capped}},
+				expectedCap: overrideCap,
+			},
+			{
+				name:      "explicitZeroOverrideIsUnbounded",
+				overrides: []config.LibP2PScalerOverride{{Reactor: "A", MaxQueueSize: &explicitUnbounded}},
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				// ARRANGE
+				configOverride := func(cfg *config.LibP2PConfig) {
+					cfg.Scaler.MaxQueueSize = globalCap
+					cfg.Scaler.Overrides = tc.overrides
+				}
+				ts := newReactorSetTestSuite(t, withLogging(), withModifiedConfig(configOverride))
+				inFlight, dropped := newMetricRecorder(), newMetricRecorder()
+				ts.sw.metrics.MessagesReactorInFlight = recordedGauge{inFlight, ""}
+				ts.sw.metrics.MessagesReactorDropped = recordedCounter{dropped, ""}
+
+				rs := newReactorSet(ts.sw)
+				require.NoError(t, rs.Add(ts.newReactor([]*conn.ChannelDescriptor{{ID: 0xF1}}), "A"))
+				// the pool is not started, so nothing drains the priority queue
+
+				envelope := p2p.Envelope{ChannelID: 0xF1, Message: &tmp2p.PexRequest{}}
+				fillLows := tc.expectedCap
+				if fillLows == 0 {
+					fillLows = globalCap
+				}
+
+				// ACT: fill with low priority, push high priority, then overflow low priority
+				for i := 0; i < fillLows; i++ {
+					rs.Receive("A", "Low", envelope, 1)
+				}
+				for i := 0; i < highs; i++ {
+					rs.Receive("A", "High", envelope, 5)
+				}
+				for i := 0; i < extraLows; i++ {
+					rs.Receive("A", "Low", envelope, 1)
+				}
+
+				// ASSERT
+				low := "message_type,Low,reactor,A"
+				high := "message_type,High,reactor,A"
+				require.Equal(t, float64(highs), inFlight.value(high))
+				require.Zero(t, dropped.value(high))
+
+				if tc.expectedCap == 0 {
+					require.Equal(t, float64(fillLows+extraLows), inFlight.value(low))
+					require.Zero(t, dropped.value(low))
+					require.False(t, ts.logBuffer.HasMatchingLine("Reactor queue full, dropping message", "reactor=A"))
+					return
+				}
+
+				// highs evict the oldest lows; extra lows are rejected
+				require.Equal(t, float64(tc.expectedCap-highs), inFlight.value(low))
+				require.Equal(t, float64(highs+extraLows), dropped.value(low))
+				require.True(t, ts.logBuffer.HasMatchingLine("Reactor queue full, dropping message", "reactor=A", "message_type=Low"))
+			})
+		}
+	})
+
 	t.Run("recover", func(t *testing.T) {
 		// ARRANGE
 		ts := newReactorSetTestSuite(t)
@@ -238,6 +325,63 @@ type reactorMock struct {
 	removedPeers []p2p.Peer
 	received     []p2p.Envelope
 }
+
+// metricRecorder sums values per label set; go-kit's generic metrics copy the
+// value on With, so they can't aggregate across call sites.
+type metricRecorder struct {
+	mu     sync.Mutex
+	values map[string]float64
+}
+
+func newMetricRecorder() *metricRecorder {
+	return &metricRecorder{values: make(map[string]float64)}
+}
+
+func (r *metricRecorder) add(key string, delta float64) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.values[key] += delta
+}
+
+func (r *metricRecorder) value(key string) float64 {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.values[key]
+}
+
+// labelKey sorts label pairs by name so lookups don't depend on With argument order.
+func labelKey(labelValues []string) string {
+	pairs := make([]string, 0, len(labelValues)/2)
+	for i := 0; i+1 < len(labelValues); i += 2 {
+		pairs = append(pairs, labelValues[i]+","+labelValues[i+1])
+	}
+	sort.Strings(pairs)
+	return strings.Join(pairs, ",")
+}
+
+type recordedCounter struct {
+	rec *metricRecorder
+	key string
+}
+
+func (c recordedCounter) With(labelValues ...string) metrics.Counter {
+	return recordedCounter{c.rec, labelKey(labelValues)}
+}
+
+func (c recordedCounter) Add(delta float64) { c.rec.add(c.key, delta) }
+
+type recordedGauge struct {
+	rec *metricRecorder
+	key string
+}
+
+func (g recordedGauge) With(labelValues ...string) metrics.Gauge {
+	return recordedGauge{g.rec, labelKey(labelValues)}
+}
+
+func (g recordedGauge) Set(float64) { panic("not supported") }
+
+func (g recordedGauge) Add(delta float64) { g.rec.add(g.key, delta) }
 
 func newReactorSetTestSuite(t *testing.T, opts ...testOption) *reactorSetTestSuite {
 	var (

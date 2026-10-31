@@ -23,6 +23,9 @@
   instead of silently dropping the condition and widening the results to
   rows the query explicitly excludes
   ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
+- `[libs/cli]` restore the whole environment after `RunWithArgs`, so variables
+  that were unset stay unset and ones set by the command don't leak into later runs
+  ([\#6131](https://github.com/cometbft/cometbft/pull/6131))
 
 ### IMPROVEMENTS
 

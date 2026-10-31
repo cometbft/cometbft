@@ -23,6 +23,9 @@
   instead of silently dropping the condition and widening the results to
   rows the query explicitly excludes
   ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
+- `[node]` fail `OnStart` when the Prometheus listen address can't be bound,
+  like the RPC and pprof listeners, instead of only logging the error
+  ([\#6130](https://github.com/cometbft/cometbft/pull/6130))
 
 ### IMPROVEMENTS
 

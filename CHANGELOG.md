@@ -23,6 +23,9 @@
   instead of silently dropping the condition and widening the results to
   rows the query explicitly excludes
   ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
+- `[types]` return zero values for missing sub-messages in `ConsensusParamsFromProto`
+  instead of panicking on a nil `Block`, `Evidence`, `Validator` or `Version`
+  ([\#6129](https://github.com/cometbft/cometbft/pull/6129))
 
 ### IMPROVEMENTS
 

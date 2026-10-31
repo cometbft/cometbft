@@ -23,6 +23,9 @@
   instead of silently dropping the condition and widening the results to
   rows the query explicitly excludes
   ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
+- `[p2p]` fix `TestSwitchStopPeerForError` panicking on repeated runs
+  with a duplicate Prometheus collector registration
+  ([\#6132](https://github.com/cometbft/cometbft/pull/6132))
 
 ### IMPROVEMENTS
 

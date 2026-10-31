@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -419,6 +420,12 @@ func TestSwitchStopsNonPersistentPeerOnError(t *testing.T) {
 	assert.False(p.IsRunning())
 }
 
+// PrometheusMetrics registers with the default registry, which panics on a
+// second registration, so the test creates its metrics once (go test -count=N).
+var stopPeerForErrorMetrics = sync.OnceValue(func() *Metrics {
+	return PrometheusMetrics(config.TestInstrumentationConfig().Namespace)
+})
+
 func TestSwitchStopPeerForError(t *testing.T) {
 	s := httptest.NewServer(promhttp.Handler())
 	defer s.Close()
@@ -439,7 +446,7 @@ func TestSwitchStopPeerForError(t *testing.T) {
 		return f
 	}
 
-	p2pMetrics := PrometheusMetrics(namespace)
+	p2pMetrics := stopPeerForErrorMetrics()
 
 	// make two connected switches
 	sw1, sw2 := MakeSwitchPair(func(i int, sw *Switch) *Switch {

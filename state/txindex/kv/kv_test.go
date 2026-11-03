@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -954,4 +955,35 @@ func TestExtractEventSeqFromKey(t *testing.T) {
 			assert.Equal(t, extractEventSeqFromKey([]byte(tc.str)), tc.expected)
 		})
 	}
+}
+
+// Prune must delete every event key of a pruned tx. Event keys end in a
+// decimal event sequence ("$es$93"); a [0, MaxInt64] key range compares them
+// as strings and skips sequences such as 93..99, which sort after
+// "$es$9223372036854775807".
+func TestTxIndex_PruneDeletesAllEventKeys(t *testing.T) {
+	store := db.NewMemDB()
+	indexer := NewTxIndex(store)
+	for h := int64(1); h <= 200; h++ { // event sequences 1..200
+		err := indexer.Index(&abci.TxResult{
+			Height: h,
+			Tx:     types.Tx(fmt.Sprintf("tx%d", h)),
+			Result: abci.ExecTxResult{Events: []abci.Event{{Type: "ev", Attributes: []abci.EventAttribute{
+				{Key: "h", Value: strconv.FormatInt(h, 10), Index: true},
+			}}}},
+		})
+		require.NoError(t, err)
+	}
+
+	_, _, err := indexer.Prune(201)
+	require.NoError(t, err)
+
+	it, err := db.IteratePrefix(store, []byte("ev.h/"))
+	require.NoError(t, err)
+	defer it.Close()
+	var left []string
+	for ; it.Valid(); it.Next() {
+		left = append(left, string(it.Key()))
+	}
+	require.Empty(t, left)
 }

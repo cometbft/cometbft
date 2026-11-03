@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"sort"
 	"strconv"
@@ -358,9 +357,9 @@ func (txi *TxIndex) deleteEvents(result *abci.TxResult, batch dbm.Batch) error {
 
 			compositeTag := fmt.Sprintf("%s.%s", event.Type, attr.Key)
 			if attr.GetIndex() {
-				zeroKey := keyForEvent(compositeTag, attr.Value, result, 0)
-				endKey := keyForEvent(compositeTag, attr.Value, result, math.MaxInt64)
-				itr, err := txi.store.Iterator(zeroKey, endKey)
+				// The event sequence is a decimal string, so a [0, MaxInt64]
+				// key range misses e.g. "$es$93" (it sorts after "$es$9223...").
+				itr, err := dbm.IteratePrefix(txi.store, keyPrefixForEvent(compositeTag, attr.Value, result))
 				if err != nil {
 					return err
 				}
@@ -1053,6 +1052,12 @@ func keyForEvent(key string, value string, result *abci.TxResult, eventSeq int64
 		result.Index,
 		eventSeqSeparator+strconv.FormatInt(eventSeq, 10),
 	))
+}
+
+// keyPrefixForEvent is keyForEvent up to and including the event sequence
+// separator, matching that tx's keys for any event sequence.
+func keyPrefixForEvent(key string, value string, result *abci.TxResult) []byte {
+	return []byte(fmt.Sprintf("%s/%s/%d/%d%s", key, value, result.Height, result.Index, eventSeqSeparator))
 }
 
 func keyForHeight(result *abci.TxResult) []byte {

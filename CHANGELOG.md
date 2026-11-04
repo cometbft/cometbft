@@ -8,8 +8,13 @@
 
 ### BUG FIXES
 
+<<<<<<< HEAD
 - `[abci/server]` close the responses channel when a socket connection ends so its `handleResponses` goroutine exits instead of leaking
   ([\#6111](https://github.com/cometbft/cometbft/pull/6111))
+=======
+- `[libs/autofile]` unregister the SIGHUP handler in `AutoFile.Close` so a later SIGHUP no longer panics the process with "send on closed channel"
+  ([\#6067](https://github.com/cometbft/cometbft/pull/6067))
+>>>>>>> upstream/main
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`

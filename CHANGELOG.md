@@ -4,14 +4,21 @@
 
 ### DEPENDENCIES
 
-- `[go]` Bump minimum Go version to 1.26.6 ([\#6060](https://github.com/cometbft/cometbft/pull/6060))
+- `[go]` Bump minimum Go version to 1.26.10 ([\#6114](https://github.com/cometbft/cometbft/pull/6114))
 
 ### BUG FIXES
 
 - `[mempool]` fix `AppMempool` ABCI response handling, callback/cleanup, and lifecycle
   ([\#5942](https://github.com/cometbft/cometbft/pull/5942))
+- `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
+  ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
+- `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`
+  ([\#6074](https://github.com/cometbft/cometbft/pull/6074))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
   ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
+- `[rpc]` release WebSocket response contexts after each subscription event,
+  preventing cancellation functions from accumulating for long-lived clients
+  ([\#6083](https://github.com/cometbft/cometbft/pull/6083))
 - `[spec]` fix the inductive invariant `spec/light-client/accountability`
 - `[state]` reject `/tx_search` and `/block_search` queries outright when
   they compare `tx.height`/`block.height` against a non-numeric argument,

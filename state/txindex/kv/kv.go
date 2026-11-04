@@ -126,11 +126,12 @@ func (txi *TxIndex) Prune(retainHeight int64) (numPruned int64, newRetainHeight 
 			}
 			return result.Height - lastRetainHeight, result.Height, errDeleteResult
 		}
+		pruned++
 		if i == len(results)-1 || results[i+1].Height > result.Height {
 			numHeightsBatchPruned++
 			currentBatchRetainedHeight = result.Height + 1
 		}
-		// flush every 1000 blocks to avoid batches becoming too large
+		// flush every 1000 pruned txs to avoid batches becoming too large
 		if pruned%1000 == 0 && pruned > 0 {
 			err := flush(batch)
 			if err != nil {
@@ -367,8 +368,12 @@ func (txi *TxIndex) deleteEvents(result *abci.TxResult, batch dbm.Batch) error {
 				for ; itr.Valid(); itr.Next() {
 					err := batch.Delete(itr.Key())
 					if err != nil {
+						_ = itr.Close()
 						return err
 					}
+				}
+				if err := itr.Close(); err != nil {
+					return err
 				}
 			}
 		}

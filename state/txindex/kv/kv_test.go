@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/cosmos/gogoproto/proto"
@@ -147,6 +148,143 @@ func TestTxIndex_Prune(t *testing.T) {
 	loadedTxResult2, err := indexer.Get(hash2)
 	require.NoError(t, err)
 	assert.True(t, proto.Equal(txResult2, loadedTxResult2))
+}
+
+// countingDB counts iterators opened and closed, and batch writes.
+type countingDB struct {
+	db.DB
+	opened, closed, writes int
+}
+
+type countingIterator struct {
+	db.Iterator
+	closed *int
+}
+
+func (it countingIterator) Close() error {
+	*it.closed++
+	return it.Iterator.Close()
+}
+
+type countingBatch struct {
+	db.Batch
+	writes *int
+}
+
+func (b countingBatch) WriteSync() error {
+	*b.writes++
+	return b.Batch.WriteSync()
+}
+
+func (c *countingDB) Iterator(start, end []byte) (db.Iterator, error) {
+	it, err := c.DB.Iterator(start, end)
+	if err != nil {
+		return nil, err
+	}
+	c.opened++
+	return countingIterator{it, &c.closed}, nil
+}
+
+func (c *countingDB) NewBatch() db.Batch {
+	return countingBatch{c.DB.NewBatch(), &c.writes}
+}
+
+// Prune must close every iterator it opens (one per indexed event attribute
+// of each pruned tx) and flush its batch every 1000 pruned txs instead of
+// keeping the whole range in one batch. Three txs per height make the flushes
+// land in the middle of a height; the returned height count must not change.
+func TestTxIndex_PruneClosesIteratorsAndFlushes(t *testing.T) {
+	store := &countingDB{DB: db.NewMemDB()}
+	indexer := NewTxIndex(store)
+
+	for h := int64(1); h <= 1500; h++ {
+		for j := uint32(0); j < 3; j++ {
+			attrs := make([]abci.EventAttribute, 0, 5)
+			for a := 0; a < 5; a++ {
+				attrs = append(attrs, abci.EventAttribute{Key: fmt.Sprintf("k%d", a), Value: strconv.FormatInt(h, 10), Index: true})
+			}
+			err := indexer.Index(&abci.TxResult{
+				Height: h,
+				Index:  j,
+				Tx:     types.Tx(fmt.Sprintf("tx%d-%d", h, j)),
+				Result: abci.ExecTxResult{Events: []abci.Event{{Type: "ev", Attributes: attrs}}},
+			})
+			require.NoError(t, err)
+		}
+	}
+
+	store.opened, store.closed, store.writes = 0, 0, 0
+	numPruned, retainedHeight, err := indexer.Prune(1001)
+	require.NoError(t, err)
+	require.Equal(t, int64(1000), numPruned)
+	require.Equal(t, int64(1001), retainedHeight)
+
+	require.Positive(t, store.opened)
+	require.Equal(t, store.opened, store.closed, "iterators left open")
+	// 3000 pruned txs: flushes after 1000, 2000 and 3000, plus the final write.
+	require.Equal(t, 4, store.writes)
+}
+
+// crashingDB lets the first `writes` batch writes through and then panics on
+// the next one without writing it, like a process killed mid-prune.
+type crashingDB struct {
+	db.DB
+	writes int
+}
+
+type crashingBatch struct {
+	db.Batch
+	db *crashingDB
+}
+
+func (b crashingBatch) WriteSync() error {
+	if b.db.writes == 0 {
+		panic("crash")
+	}
+	b.db.writes--
+	return b.Batch.WriteSync()
+}
+
+func (c *crashingDB) NewBatch() db.Batch { return crashingBatch{c.DB.NewBatch(), c} }
+
+// A prune killed after a flush in the middle of a height must finish on the
+// next run: the node calls Prune with the same retain height after a restart.
+func TestTxIndex_PruneResumesAfterCrashMidHeight(t *testing.T) {
+	mem := db.NewMemDB()
+	indexer := NewTxIndex(mem)
+	for h := int64(1); h <= 1500; h++ {
+		for j := uint32(0); j < 3; j++ {
+			err := indexer.Index(&abci.TxResult{
+				Height: h,
+				Index:  j,
+				Tx:     types.Tx(fmt.Sprintf("tx%d-%d", h, j)),
+				Result: abci.ExecTxResult{Events: []abci.Event{{Type: "ev", Attributes: []abci.EventAttribute{
+					{Key: "h", Value: strconv.FormatInt(h, 10), Index: true},
+				}}}},
+			})
+			require.NoError(t, err)
+		}
+	}
+	txsBelow := func(height int64) int {
+		res, _, err := NewTxIndex(mem).Search(context.Background(),
+			query.MustCompile(fmt.Sprintf("tx.height < %d", height)), txindex.Pagination{})
+		require.NoError(t, err)
+		return len(res)
+	}
+
+	// The first flush happens after 1000 txs, i.e. after the first tx of
+	// height 334; the process dies on the second.
+	require.Panics(t, func() { _, _, _ = NewTxIndex(&crashingDB{DB: mem, writes: 1}).Prune(1001) })
+	require.Equal(t, 3000-1000, txsBelow(1001), "the first flush did not persist")
+	require.Equal(t, 2, txsBelow(335)-txsBelow(334), "height 334 should be half pruned")
+
+	// Restart: same retain height, new indexer on the same store.
+	numPruned, retainedHeight, err := NewTxIndex(mem).Prune(1001)
+	require.NoError(t, err)
+	require.Equal(t, int64(1001), retainedHeight)
+	require.Equal(t, int64(667), numPruned) // heights 334..1000
+	require.Zero(t, txsBelow(1001))
+	require.Equal(t, 3*500, txsBelow(1501), "heights >= 1001 must stay")
 }
 
 func TestTxSearch(t *testing.T) {

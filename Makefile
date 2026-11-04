@@ -207,6 +207,12 @@ go.sum: go.mod
 	@go mod tidy
 .PHONY: go.sum
 
+#? tidy-all: Run go mod tidy on every Go module in the repo
+tidy-all:
+	@echo "--> Running go mod tidy on all modules"
+	@find . -name go.mod -not -path "./.git/*" -execdir go mod tidy \;
+.PHONY: tidy-all
+
 #? draw_deps: Generate deps graph
 draw_deps:
 	@# requires brew install graphviz or apt-get install graphviz

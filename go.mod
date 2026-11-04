@@ -5,7 +5,7 @@ go 1.26.10
 require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/Masterminds/semver/v3 v3.5.0
-	github.com/adlio/schema v1.4.0
+	github.com/adlio/schema v1.5.2
 	github.com/btcsuite/btcd/btcutil v1.2.0
 	github.com/cloudflare/circl v1.6.5
 	github.com/cometbft/cometbft-db v0.14.1
@@ -73,7 +73,7 @@ require (
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/dgraph-io/badger/v4 v4.2.0 // indirect
 	github.com/dgraph-io/ristretto v0.1.1 // indirect
-	github.com/docker/go-connections v0.6.0 // indirect
+	github.com/docker/go-connections v0.7.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dunglas/httpsfv v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect

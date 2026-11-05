@@ -8,6 +8,8 @@
 
 ### BUG FIXES
 
+- `[cmd]` reject negative `--v` and `--n` counts in `cometbft testnet` with an error instead of panicking
+  ([\#6139](https://github.com/cometbft/cometbft/pull/6139))
 - `[libs/autofile]` unregister the SIGHUP handler in `AutoFile.Close` so a later SIGHUP no longer panics the process with "send on closed channel"
   ([\#6067](https://github.com/cometbft/cometbft/pull/6067))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking

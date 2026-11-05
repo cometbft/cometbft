@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/cometbft/cometbft/crypto/merkle"
 	cmtmath "github.com/cometbft/cometbft/libs/math"
 	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
@@ -110,14 +111,34 @@ func (env *Environment) TxSearch(
 	pageSize := cmtmath.MinInt(perPage, totalCount-skipCount)
 
 	apiResults := make([]*ctypes.ResultTx, 0, pageSize)
+	var (
+		proofBlock *types.Block
+		proofRoot  []byte
+		proofs     []*merkle.Proof
+	)
 	for i := skipCount; i < skipCount+pageSize; i++ {
 		r := results[i]
 
 		var proof types.TxProof
 		if prove {
-			block := env.BlockStore.LoadBlock(r.Height)
-			if block != nil {
-				proof = block.Txs.Proof(int(r.Index))
+			// Results are sorted by height. Load each block and build its proofs
+			// once, retaining only the current block's tree for this page.
+			if i == skipCount || results[i-1].Height != r.Height {
+				proofBlock = env.BlockStore.LoadBlock(r.Height)
+				if proofBlock != nil {
+					hashes := make([][]byte, len(proofBlock.Txs))
+					for j, tx := range proofBlock.Txs {
+						hashes[j] = tx.Hash()
+					}
+					proofRoot, proofs = merkle.ProofsFromByteSlices(hashes)
+				}
+			}
+			if proofBlock != nil {
+				proof = types.TxProof{
+					RootHash: proofRoot,
+					Data:     proofBlock.Txs[r.Index],
+					Proof:    *proofs[r.Index],
+				}
 			}
 		}
 

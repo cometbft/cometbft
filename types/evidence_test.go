@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/binary"
 	"math"
 	"testing"
 	"time"
@@ -149,6 +150,25 @@ func TestLightClientAttackEvidenceBasic(t *testing.T) {
 		tc.malleateEvidence(lcae)
 		assert.NotEqual(t, hash, lcae.Hash(), tc.testName)
 	}
+}
+
+func TestLightClientAttackEvidenceHash(t *testing.T) {
+	// ARRANGE
+	header := &Header{Height: 5, Time: defaultVoteTime, ValidatorsHash: tmhash.Sum([]byte("validators"))}
+	hash := header.Hash()
+	require.Len(t, hash, tmhash.Size)
+	require.NotZero(t, hash[tmhash.Size-1], "fixture must detect truncation of the final byte")
+	ev := &LightClientAttackEvidence{
+		ConflictingBlock: &LightBlock{SignedHeader: &SignedHeader{Header: header}},
+		CommonHeight:     4,
+	}
+	preimage := binary.AppendVarint(append([]byte(nil), hash...), ev.CommonHeight)
+
+	// ACT
+	got := ev.Hash()
+
+	// ASSERT
+	assert.Equal(t, tmhash.Sum(preimage), got)
 }
 
 func TestLightClientAttackEvidenceValidation(t *testing.T) {

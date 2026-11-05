@@ -195,7 +195,6 @@ func (cs *State) IngestVerifiedBlock(ic IngestCandidate) (err error) {
 
 	// register response channel so we can receive from receiveRoutine
 	ch := make(chan ingestVerifiedBlockResponse, 1)
-	defer close(ch)
 
 	req := &ingestVerifiedBlockRequest{
 		IngestCandidate: ic,
@@ -215,6 +214,8 @@ func (cs *State) IngestVerifiedBlock(ic IngestCandidate) (err error) {
 
 // note the outcome of this call is NOT relevant to statsMsgQueue
 func (cs *State) handleIngestVerifiedBlockRequest(req *ingestVerifiedBlockRequest) {
+	defer close(req.response)
+
 	err := cs.ingestBlock(req.IngestCandidate)
 
 	req.response <- ingestVerifiedBlockResponse{err: err}

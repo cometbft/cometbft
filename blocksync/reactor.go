@@ -343,7 +343,11 @@ func (r *Reactor) handlePeerResponse(msg *bcproto.BlockResponse, src p2p.Peer) {
 	}
 
 	if err := r.pool.AddBlock(src.ID(), bi, extCommit, msg.Block.Size()); err != nil {
-		r.Logger.Error("Failed to add block", "peer", src, "err", err)
+		if errors.Is(err, ErrAlreadyCommittedBlock) {
+			r.Logger.Debug("Ignoring already committed block", "peer", src, "err", err)
+		} else {
+			r.Logger.Error("Failed to add block", "peer", src, "err", err)
+		}
 	}
 }
 

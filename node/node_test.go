@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -541,4 +542,20 @@ func state(nVals int, height int64) (sm.State, dbm.DB, []types.PrivValidator) {
 		}
 	}
 	return s, stateDB, privVals
+}
+
+func TestBootstrapStateReturnsBlockstoreOpenError(t *testing.T) {
+	openErr := errors.New("cannot open blockstore")
+	dbProvider := func(ctx *cfg.DBContext) (dbm.DB, error) {
+		if ctx.ID == "blockstore" {
+			return nil, openErr
+		}
+		return dbm.NewMemDB(), nil
+	}
+	genProvider := func() (*types.GenesisDoc, error) {
+		return &types.GenesisDoc{ChainID: "test-chain"}, nil
+	}
+
+	err := BootstrapStateWithGenProvider(context.Background(), cfg.DefaultConfig(), dbProvider, genProvider, 1, nil)
+	require.ErrorIs(t, err, openErr)
 }

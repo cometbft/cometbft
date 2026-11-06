@@ -25,6 +25,8 @@
   instead of silently dropping the condition and widening the results to
   rows the query explicitly excludes
   ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
+- `[node]` stop the state sync goroutine when the node shuts down and wait for it in `OnStop` before the stores are closed, so it can no longer outlive the node or write to closed stores
+  ([\#6140](https://github.com/cometbft/cometbft/pull/6140))
 
 ### IMPROVEMENTS
 

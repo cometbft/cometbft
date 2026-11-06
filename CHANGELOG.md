@@ -25,6 +25,8 @@
   instead of silently dropping the condition and widening the results to
   rows the query explicitly excludes
   ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
+- `[abci/client]` invoke the local client's response callback without holding the application mutex, so a callback that calls back into the client no longer deadlocks (as already fixed for the socket and gRPC clients)
+  ([\#6141](https://github.com/cometbft/cometbft/pull/6141))
 
 ### IMPROVEMENTS
 

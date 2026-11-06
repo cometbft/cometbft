@@ -45,21 +45,37 @@ func (app *localClient) SetResponseCallback(cb Callback) {
 }
 
 func (app *localClient) CheckTxAsync(ctx context.Context, req *types.RequestCheckTx) (*ReqRes, error) {
-	app.mtx.Lock()
-	defer app.mtx.Unlock()
-
-	res, err := app.Application.CheckTx(ctx, req)
+	res, cb, err := app.checkTx(ctx, req)
 	if err != nil {
 		return nil, err
 	}
+
+	// Invoke the callback without holding the application mutex, so that it can
+	// call back into the client (every other method takes the same mutex).
 	return app.callback(
+		cb,
 		types.ToRequestCheckTx(req),
 		types.ToResponseCheckTx(res),
 	), nil
 }
 
-func (app *localClient) callback(req *types.Request, res *types.Response) *ReqRes {
-	app.Callback(req, res)
+// checkTx runs CheckTx under the application mutex and returns the response
+// callback set at that time.
+func (app *localClient) checkTx(ctx context.Context, req *types.RequestCheckTx) (*types.ResponseCheckTx, Callback, error) {
+	app.mtx.Lock()
+	defer app.mtx.Unlock()
+
+	res, err := app.Application.CheckTx(ctx, req)
+	if err != nil {
+		return nil, nil, err
+	}
+	return res, app.Callback, nil
+}
+
+func (app *localClient) callback(cb Callback, req *types.Request, res *types.Response) *ReqRes {
+	if cb != nil {
+		cb(req, res)
+	}
 	rr := newLocalReqRes(req, res)
 	rr.callbackInvoked = true
 	return rr

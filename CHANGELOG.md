@@ -38,6 +38,8 @@
 
 ### STATE-BREAKING
 
+- `[evidence]` fix block hash calculation ([\#6138](https://github.com/cometbft/cometbft/pull/6138))
+
 ### API-BREAKING
 
 ## v0.40.0

@@ -11,6 +11,7 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/p2p"
 	p2pmocks "github.com/cometbft/cometbft/p2p/mocks"
 	ssproto "github.com/cometbft/cometbft/proto/tendermint/statesync"
@@ -94,6 +95,64 @@ func TestReactor_Receive_ChunkRequest(t *testing.T) {
 			peer.AssertExpectations(t)
 		})
 	}
+}
+
+func TestReactor_Receive_OversizedSnapshotResponseWithoutActiveSync(t *testing.T) {
+	cfg := config.DefaultStateSyncConfig()
+	cfg.MaxSnapshotChunks = 1
+
+	r := NewReactor(*cfg, nil, nil, NopMetrics())
+	r.SetSwitch(p2p.NewSwitch(config.DefaultP2PConfig(), nil))
+	require.NoError(t, r.Start())
+	t.Cleanup(func() { require.NoError(t, r.Stop()) })
+
+	peer := &p2pmocks.Peer{}
+	peer.On("IsRunning").Return(false)
+
+	require.NotPanics(t, func() {
+		r.Receive(p2p.Envelope{
+			ChannelID: SnapshotChannel,
+			Src:       peer,
+			Message: &ssproto.SnapshotsResponse{
+				Height: 1,
+				Chunks: 2,
+				Hash:   []byte("snapshot"),
+			},
+		})
+	})
+
+	peer.AssertExpectations(t)
+}
+
+func TestReactor_Receive_OversizedSnapshotResponseRejectsActiveSyncPeer(t *testing.T) {
+	cfg := config.DefaultStateSyncConfig()
+	cfg.MaxSnapshotChunks = 1
+
+	r := NewReactor(*cfg, nil, nil, NopMetrics())
+	r.SetSwitch(p2p.NewSwitch(config.DefaultP2PConfig(), nil))
+	r.syncer = newSyncer(*cfg, log.NewNopLogger(), nil, nil, nil, "")
+	require.NoError(t, r.Start())
+	t.Cleanup(func() { require.NoError(t, r.Stop()) })
+
+	peer := &p2pmocks.Peer{}
+	peer.On("ID").Return(p2p.ID("oversized-snapshot-peer"))
+	peer.On("IsRunning").Return(false)
+
+	r.Receive(p2p.Envelope{
+		ChannelID: SnapshotChannel,
+		Src:       peer,
+		Message: &ssproto.SnapshotsResponse{
+			Height: 1,
+			Chunks: 2,
+			Hash:   []byte("snapshot"),
+		},
+	})
+
+	r.syncer.snapshots.Lock()
+	_, rejected := r.syncer.snapshots.peerRejectlist[p2p.ID("oversized-snapshot-peer")]
+	r.syncer.snapshots.Unlock()
+	require.True(t, rejected)
+	peer.AssertExpectations(t)
 }
 
 func TestReactor_Receive_SnapshotsRequest(t *testing.T) {

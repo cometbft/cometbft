@@ -4,9 +4,12 @@
 
 ### DEPENDENCIES
 
-- `[go]` Bump minimum Go version to 1.26.6 ([\#6060](https://github.com/cometbft/cometbft/pull/6060))
+- `[go]` Bump minimum Go version to 1.26.10 ([\#6114](https://github.com/cometbft/cometbft/pull/6114))
 
 ### BUG FIXES
+
+- `[libs/autofile]` unregister the SIGHUP handler in `AutoFile.Close` so a later SIGHUP no longer panics the process with "send on closed channel"
+  ([\#6067](https://github.com/cometbft/cometbft/pull/6067))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`
@@ -34,6 +37,8 @@
 ### FEATURES
 
 ### STATE-BREAKING
+
+- `[evidence]` fix block hash calculation ([\#6138](https://github.com/cometbft/cometbft/pull/6138))
 
 ### API-BREAKING
 

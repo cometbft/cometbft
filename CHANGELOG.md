@@ -8,6 +8,8 @@
 
 ### BUG FIXES
 
+- `[lp2p]` cap per-reactor priority queue to prevent memory-exhaustion DoS
+  ([\#5955](https://github.com/cometbft/cometbft/pull/5955))
 - `[libs/autofile]` unregister the SIGHUP handler in `AutoFile.Close` so a later SIGHUP no longer panics the process with "send on closed channel"
   ([\#6067](https://github.com/cometbft/cometbft/pull/6067))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking

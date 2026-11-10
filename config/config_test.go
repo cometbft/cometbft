@@ -204,6 +204,33 @@ func TestP2PConfigValidateBasic(t *testing.T) {
 				errContains: "p2p.libp2p.scaler.overrides.0.threshold_latency can't be negative",
 			},
 			{
+				name: "rejectsNegativeScalerMaxQueueSize",
+				mutate: func(cfg *config.P2PConfig) {
+					cfg.LibP2PConfig.Scaler.MaxQueueSize = -1
+				},
+				errContains: "p2p.libp2p.scaler.max_queue_size can't be negative",
+			},
+			{
+				name: "rejectsNegativeOverrideMaxQueueSize",
+				mutate: func(cfg *config.P2PConfig) {
+					negative := -1
+					cfg.LibP2PConfig.Scaler.Overrides = []config.LibP2PScalerOverride{
+						{Reactor: "MEMPOOL", MaxQueueSize: &negative},
+					}
+				},
+				errContains: "p2p.libp2p.scaler.overrides.0.max_queue_size can't be negative",
+			},
+			{
+				name: "allowsUnsetAndExplicitZeroOverrideMaxQueueSize",
+				mutate: func(cfg *config.P2PConfig) {
+					zero := 0
+					cfg.LibP2PConfig.Scaler.Overrides = []config.LibP2PScalerOverride{
+						{Reactor: "MEMPOOL"},
+						{Reactor: "BLOCKSYNC", MaxQueueSize: &zero},
+					}
+				},
+			},
+			{
 				name: "disabledLimits",
 				mutate: func(cfg *config.P2PConfig) {
 					cfg.LibP2PConfig.Limits.Mode = config.LibP2PLimitsModeDisabled

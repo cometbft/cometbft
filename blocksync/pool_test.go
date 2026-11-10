@@ -66,6 +66,9 @@ func (p testPeer) simulateInput(input inputData) {
 		}
 	}
 	err := input.pool.AddBlock(input.request.PeerID, block, extCommit, 123)
+	if !input.pool.IsRunning() {
+		return // a stopped pool rejects late blocks
+	}
 	require.NoError(input.t, err)
 	// TODO: uncommenting this creates a race which is detected by:
 	// https://github.com/golang/go/blob/2bd767b1022dd3254bcec469f0ee164024726486/src/testing/testing.go#L854-L856
@@ -845,4 +848,53 @@ func TestBlockPoolTwoMaliciousPeersStaggered(t *testing.T) {
 	t.Logf("IsCaughtUp() became true (height=%d, maxPeerHeight=%d, peers=%d) — "+
 		"node would escape blocksync despite the attackers",
 		pool.Height(), pool.MaxPeerHeight(), len(pool.peers))
+}
+
+// TestBlockPoolStopReleasesRequesters checks that stopping the pool (the
+// switch to consensus) drops its requesters: blocks they hold are released and
+// a late response to an in-flight request is not stored.
+func TestBlockPoolStopReleasesRequesters(t *testing.T) {
+	requestsCh := make(chan BlockRequest, 100)
+	errorsCh := make(chan peerError, 100)
+
+	pool := NewBlockPool(1, requestsCh, errorsCh, time.Second)
+	pool.SetLogger(log.TestingLogger())
+	require.NoError(t, pool.Start())
+	t.Cleanup(func() { _ = pool.Stop() })
+
+	const peerID = p2p.ID("A")
+	pool.SetPeerRange(peerID, 1, 10)
+
+	// Wait until heights 2 and 3 are requested from the peer.
+	requested := make(map[int64]bool)
+	require.Eventually(t, func() bool {
+		select {
+		case req := <-requestsCh:
+			requested[req.Height] = true
+		default:
+		}
+		return requested[2] && requested[3]
+	}, 10*time.Second, 10*time.Millisecond)
+
+	newBlock := func(height int64) (*types.Block, *types.ExtendedCommit) {
+		return &types.Block{Header: types.Header{Height: height}, LastCommit: &types.Commit{}},
+			&types.ExtendedCommit{Height: height}
+	}
+
+	// Block 2 cannot be processed without block 1, so its requester keeps it.
+	block, extCommit := newBlock(2)
+	require.NoError(t, pool.AddBlock(peerID, block, extCommit, 123))
+
+	require.NoError(t, pool.Stop())
+
+	// The request for height 3 was in flight when the pool stopped.
+	block, extCommit = newBlock(3)
+	require.Error(t, pool.AddBlock(peerID, block, extCommit, 123))
+
+	_, numPending, lenRequesters := pool.GetStatus()
+	require.Zero(t, lenRequesters)
+	require.Zero(t, numPending)
+
+	// A block popped concurrently with the stop must not panic.
+	require.NotPanics(t, pool.PopRequest)
 }

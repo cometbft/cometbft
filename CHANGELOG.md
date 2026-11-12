@@ -31,6 +31,12 @@
 - `[state]` use fast validator loading for `BlockExecutor` commit-info paths,
   avoiding unnecessary proposer-priority reconstruction on cache misses
   ([\#6039](https://github.com/cometbft/cometbft/pull/6039))
+- `[privval]` export `FilePV` signing-state errors (`ErrHeightRegression`,
+  `ErrRoundRegression`, `ErrStepRegression`, `ErrNoSignBytes`,
+  `ErrConflictingData`, `ErrUnexpectedVoteExtension`) so callers can match them
+  with `errors.Is` instead of comparing error strings
+  ([\#6151](https://github.com/cometbft/cometbft/pull/6151))
+  (contributes to [\#1140](https://github.com/cometbft/cometbft/issues/1140))
 
 ### FEATURES
 

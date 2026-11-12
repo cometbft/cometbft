@@ -174,17 +174,21 @@ func TestSignVote(t *testing.T) {
 	assert.NoError(err, "expected no error on signing same vote")
 
 	// now try some bad votes
-	cases := []*types.Vote{
-		newVote(privVal.Key.Address, 0, height, round-1, voteType, block1, nil),   // round regression
-		newVote(privVal.Key.Address, 0, height-1, round, voteType, block1, nil),   // height regression
-		newVote(privVal.Key.Address, 0, height-2, round+4, voteType, block1, nil), // height regression and different round
-		newVote(privVal.Key.Address, 0, height, round, voteType, block2, nil),     // different block
+	cases := []struct {
+		vote    *types.Vote
+		wantErr error
+	}{
+		{newVote(privVal.Key.Address, 0, height, round-1, voteType, block1, nil), ErrRoundRegression},    // round regression
+		{newVote(privVal.Key.Address, 0, height-1, round, voteType, block1, nil), ErrHeightRegression},   // height regression
+		{newVote(privVal.Key.Address, 0, height-2, round+4, voteType, block1, nil), ErrHeightRegression}, // height regression and different round
+		{newVote(privVal.Key.Address, 0, height, round, voteType, block2, nil), ErrConflictingData},      // different block
 	}
 
 	for _, c := range cases {
-		cpb := c.ToProto()
+		cpb := c.vote.ToProto()
 		err = privVal.SignVote("mychainid", cpb)
 		assert.Error(err, "expected error on signing conflicting vote")
+		assert.ErrorIs(err, c.wantErr, "expected the exported sentinel error")
 	}
 
 	// try signing a vote with a different time stamp
@@ -224,16 +228,20 @@ func TestSignProposal(t *testing.T) {
 	assert.NoError(err, "expected no error on signing same proposal")
 
 	// now try some bad Proposals
-	cases := []*types.Proposal{
-		newProposal(height, round-1, block1),   // round regression
-		newProposal(height-1, round, block1),   // height regression
-		newProposal(height-2, round+4, block1), // height regression and different round
-		newProposal(height, round, block2),     // different block
+	cases := []struct {
+		proposal *types.Proposal
+		wantErr  error
+	}{
+		{newProposal(height, round-1, block1), ErrRoundRegression},    // round regression
+		{newProposal(height-1, round, block1), ErrHeightRegression},   // height regression
+		{newProposal(height-2, round+4, block1), ErrHeightRegression}, // height regression and different round
+		{newProposal(height, round, block2), ErrConflictingData},      // different block
 	}
 
 	for _, c := range cases {
-		err = privVal.SignProposal("mychainid", c.ToProto())
+		err = privVal.SignProposal("mychainid", c.proposal.ToProto())
 		assert.Error(err, "expected error on signing conflicting proposal")
+		assert.ErrorIs(err, c.wantErr, "expected the exported sentinel error")
 	}
 
 	// try signing a proposal with a different time stamp
@@ -242,6 +250,49 @@ func TestSignProposal(t *testing.T) {
 	err = privVal.SignProposal("mychainid", pbp)
 	assert.NoError(err)
 	assert.Equal(sig, proposal.Signature)
+}
+
+func TestCheckHRS(t *testing.T) {
+	// last signed state: height 10, round 2, step 3, with SignBytes present.
+	lss := FilePVLastSignState{
+		Height:    10,
+		Round:     2,
+		Step:      3,
+		SignBytes: []byte("signed"),
+		Signature: []byte("sig"),
+	}
+
+	testCases := []struct {
+		name     string
+		height   int64
+		round    int32
+		step     int8
+		wantErr  error
+		wantSame bool
+	}{
+		{"lower height", 9, 0, 0, ErrHeightRegression, false},
+		{"same height lower round", 10, 1, 0, ErrRoundRegression, false},
+		{"same height round lower step", 10, 2, 2, ErrStepRegression, false},
+		{"same HRS reuses signature", 10, 2, 3, nil, true},
+		{"higher height is fine", 11, 0, 0, nil, false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			same, err := lss.CheckHRS(tc.height, tc.round, tc.step)
+			if tc.wantErr != nil {
+				require.ErrorIs(t, err, tc.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tc.wantSame, same)
+		})
+	}
+
+	// Same HRS but no SignBytes to reuse.
+	empty := FilePVLastSignState{Height: 10, Round: 2, Step: 3}
+	_, err := empty.CheckHRS(10, 2, 3)
+	require.ErrorIs(t, err, ErrNoSignBytes)
 }
 
 func TestDifferByTimestamp(t *testing.T) {

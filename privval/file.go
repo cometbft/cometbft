@@ -2,7 +2,6 @@ package privval
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -99,18 +98,19 @@ func (lss *FilePVLastSignState) reset() {
 // It panics if the HRS matches the arguments, there's a SignBytes, but no Signature.
 func (lss *FilePVLastSignState) CheckHRS(height int64, round int32, step int8) (bool, error) {
 	if lss.Height > height {
-		return false, fmt.Errorf("height regression. Got %v, last height %v", height, lss.Height)
+		return false, fmt.Errorf("%w. Got %v, last height %v", ErrHeightRegression, height, lss.Height)
 	}
 
 	if lss.Height == height {
 		if lss.Round > round {
-			return false, fmt.Errorf("round regression at height %v. Got %v, last round %v", height, round, lss.Round)
+			return false, fmt.Errorf("%w at height %v. Got %v, last round %v", ErrRoundRegression, height, round, lss.Round)
 		}
 
 		if lss.Round == round {
 			if lss.Step > step {
 				return false, fmt.Errorf(
-					"step regression at height %v round %v. Got %v, last step %v",
+					"%w at height %v round %v. Got %v, last step %v",
+					ErrStepRegression,
 					height,
 					round,
 					step,
@@ -123,7 +123,7 @@ func (lss *FilePVLastSignState) CheckHRS(height int64, round int32, step int8) (
 					}
 					return true, nil
 				}
-				return false, errors.New("no SignBytes found")
+				return false, ErrNoSignBytes
 			}
 		}
 	}
@@ -260,7 +260,7 @@ func (pv *FilePV) GetPubKey() (crypto.PubKey, error) {
 // chainID. Implements PrivValidator.
 func (pv *FilePV) SignVote(chainID string, vote *cmtproto.Vote) error {
 	if err := pv.signVote(chainID, vote); err != nil {
-		return fmt.Errorf("error signing vote: %v", err)
+		return fmt.Errorf("error signing vote: %w", err)
 	}
 	return nil
 }
@@ -269,7 +269,7 @@ func (pv *FilePV) SignVote(chainID string, vote *cmtproto.Vote) error {
 // the chainID. Implements PrivValidator.
 func (pv *FilePV) SignProposal(chainID string, proposal *cmtproto.Proposal) error {
 	if err := pv.signProposal(chainID, proposal); err != nil {
-		return fmt.Errorf("error signing proposal: %v", err)
+		return fmt.Errorf("error signing proposal: %w", err)
 	}
 	return nil
 }
@@ -329,7 +329,7 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 			return err
 		}
 	} else if len(vote.Extension) > 0 {
-		return errors.New("unexpected vote extension - extensions are only allowed in non-nil precommits")
+		return ErrUnexpectedVoteExtension
 	}
 
 	// We might crash before writing to the wal,
@@ -346,7 +346,7 @@ func (pv *FilePV) signVote(chainID string, vote *cmtproto.Vote) error {
 			vote.Timestamp = timestamp
 			vote.Signature = lss.Signature
 		} else {
-			err = fmt.Errorf("conflicting data")
+			err = ErrConflictingData
 		}
 
 		vote.ExtensionSignature = extSig
@@ -393,7 +393,7 @@ func (pv *FilePV) signProposal(chainID string, proposal *cmtproto.Proposal) erro
 			proposal.Timestamp = timestamp
 			proposal.Signature = lss.Signature
 		} else {
-			err = fmt.Errorf("conflicting data")
+			err = ErrConflictingData
 		}
 		return err
 	}

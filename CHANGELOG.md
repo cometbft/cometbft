@@ -16,6 +16,9 @@
   ([\#6074](https://github.com/cometbft/cometbft/pull/6074))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race
   ([\#6053](https://github.com/cometbft/cometbft/pull/6053))
+- `[privval]` reject `SignVoteRequest`/`SignProposalRequest` that carry no vote
+  or proposal, returning a remote signer error instead of panicking the signer
+  ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
 - `[rpc]` release WebSocket response contexts after each subscription event,
   preventing cancellation functions from accumulating for long-lived clients
   ([\#6083](https://github.com/cometbft/cometbft/pull/6083))

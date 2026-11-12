@@ -10,6 +10,11 @@
 
 - `[libs/autofile]` unregister the SIGHUP handler in `AutoFile.Close` so a later SIGHUP no longer panics the process with "send on closed channel"
   ([\#6067](https://github.com/cometbft/cometbft/pull/6067))
+- `[libs/bits]` guard `BitArray.GetIndex` against an out-of-range `Elems`
+  access when `Bits` exceeds the number of elements (a malformed array can be
+  built via `FromProto`), returning `false` instead of panicking, matching the
+  guard already present in `SetIndex`
+  ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`

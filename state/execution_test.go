@@ -21,6 +21,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cometbft/cometbft/internal/test"
 	"github.com/cometbft/cometbft/libs/log"
+	cmtquery "github.com/cometbft/cometbft/libs/pubsub/query"
 	mpmocks "github.com/cometbft/cometbft/mempool/mocks"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmtversion "github.com/cometbft/cometbft/proto/tendermint/version"
@@ -1118,7 +1119,7 @@ func TestCreateProposalAbsentVoteExtensions(t *testing.T) {
 	}
 }
 
-func newCachedBlockExec(t *testing.T, stateDB dbm.DB) *sm.BlockExecutor {
+func newCachedBlockExec(t testing.TB, stateDB dbm.DB) *sm.BlockExecutor {
 	t.Helper()
 	app := &testApp{}
 	cc := proxy.NewLocalClientCreator(app)
@@ -1216,6 +1217,157 @@ func TestValidateBlockCacheHeightAware(t *testing.T) {
 	// block1's hash is cached but its height is no longer valid for staleState.
 	err = exec.ValidateBlock(staleState, block1)
 	require.Error(t, err)
+}
+
+func TestApplyBlockUsesAsyncRunnerForBlockEvents(t *testing.T) {
+	state, stateDB, _ := makeState(1, 1)
+	exec := newCachedBlockExec(t, stateDB)
+
+	eventBus := &blockingBlockEventPublisher{
+		newBlockStarted: make(chan struct{}, 1),
+		releaseNewBlock: make(chan struct{}),
+	}
+	exec.SetEventBus(eventBus)
+	exec.SetAsyncRunner(func(task func()) {
+		go task()
+	})
+
+	block, err := makeBlock(state, 1, new(types.Commit))
+	require.NoError(t, err)
+	bps, err := block.MakePartSet(testPartSize)
+	require.NoError(t, err)
+	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := exec.ApplyBlock(state, blockID, block)
+		done <- err
+	}()
+
+	select {
+	case <-eventBus.newBlockStarted:
+	case <-time.After(time.Second):
+		t.Fatal("block event publication did not start")
+	}
+
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(time.Second):
+		close(eventBus.releaseNewBlock)
+		require.NoError(t, <-done)
+		t.Fatal("ApplyBlock waited for block event publication")
+	}
+
+	close(eventBus.releaseNewBlock)
+}
+
+func TestApplyBlockPublishesBlockEventsSynchronouslyByDefault(t *testing.T) {
+	state, stateDB, _ := makeState(1, 1)
+	exec := newCachedBlockExec(t, stateDB)
+
+	eventBus := &blockingBlockEventPublisher{
+		newBlockStarted: make(chan struct{}, 1),
+		releaseNewBlock: make(chan struct{}),
+	}
+	exec.SetEventBus(eventBus)
+
+	block, err := makeBlock(state, 1, new(types.Commit))
+	require.NoError(t, err)
+	bps, err := block.MakePartSet(testPartSize)
+	require.NoError(t, err)
+	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := exec.ApplyBlock(state, blockID, block)
+		done <- err
+	}()
+
+	select {
+	case <-eventBus.newBlockStarted:
+	case <-time.After(time.Second):
+		t.Fatal("block event publication did not start")
+	}
+
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+		t.Fatal("ApplyBlock returned before synchronous event publication completed")
+	case <-time.After(10 * time.Millisecond):
+	}
+
+	close(eventBus.releaseNewBlock)
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(time.Second):
+		t.Fatal("ApplyBlock did not return after event publication completed")
+	}
+}
+
+func TestApplyBlockAsyncBlockEventsMayLagLaterEventBusPublications(t *testing.T) {
+	state, stateDB, _ := makeState(1, 1)
+	exec := newCachedBlockExec(t, stateDB)
+
+	eventBus := types.NewEventBus()
+	require.NoError(t, eventBus.Start())
+	t.Cleanup(func() { require.NoError(t, eventBus.Stop()) })
+
+	sub, err := eventBus.Subscribe(t.Context(), "async-event-order", cmtquery.All, 16)
+	require.NoError(t, err)
+
+	exec.SetEventBus(eventBus)
+	queuedTasks := make(chan func(), 1)
+	exec.SetAsyncRunner(func(task func()) {
+		queuedTasks <- task
+	})
+
+	block, err := makeBlock(state, 1, new(types.Commit))
+	require.NoError(t, err)
+	bps, err := block.MakePartSet(testPartSize)
+	require.NoError(t, err)
+	blockID := types.BlockID{Hash: block.Hash(), PartSetHeader: bps.Header()}
+
+	_, err = exec.ApplyBlock(state, blockID, block)
+	require.NoError(t, err)
+
+	// ApplyBlock only enqueues block-event publication in asynchronous mode.
+	// A later synchronous publisher, such as consensus entering the next
+	// height, can therefore reach EventBus before the queued block events.
+	require.NoError(t, eventBus.PublishEventNewRoundStep(types.EventDataRoundState{}))
+	select {
+	case first := <-sub.Out():
+		require.IsType(t, types.EventDataRoundState{}, first.Data())
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for the synchronous consensus event")
+	}
+
+	select {
+	case task := <-queuedTasks:
+		task()
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for the queued block-event task")
+	}
+	select {
+	case second := <-sub.Out():
+		require.IsType(t, types.EventDataNewBlock{}, second.Data())
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for the asynchronous block event")
+	}
+}
+
+type blockingBlockEventPublisher struct {
+	types.NopEventBus
+
+	newBlockStarted chan struct{}
+	releaseNewBlock chan struct{}
+}
+
+func (p *blockingBlockEventPublisher) PublishEventNewBlock(types.EventDataNewBlock) error {
+	p.newBlockStarted <- struct{}{}
+	<-p.releaseNewBlock
+	return nil
 }
 
 func stripSignatures(ec *types.ExtendedCommit) {

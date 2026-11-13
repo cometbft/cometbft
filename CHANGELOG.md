@@ -37,6 +37,11 @@
 
 ### FEATURES
 
+- `[consensus]` add opt-in asynchronous block event publication via
+  `node.AsyncBlockEvents`; queued block-event tasks retain FIFO ordering, but
+  ordering relative to events from other publishers is not guaranteed
+  ([\#6040](https://github.com/cometbft/cometbft/pull/6040))
+
 ### STATE-BREAKING
 
 - `[evidence]` fix block hash calculation ([\#6138](https://github.com/cometbft/cometbft/pull/6138))

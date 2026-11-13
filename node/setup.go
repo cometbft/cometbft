@@ -62,6 +62,12 @@ type Provider func(*cfg.Config, log.Logger) (*Node, error)
 // PrivValidator, ClientCreator, GenesisDoc, and DBProvider.
 // It implements NodeProvider.
 func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
+	return DefaultNewNodeWithOptions(config, logger)
+}
+
+// DefaultNewNodeWithOptions returns a default CometBFT node with the supplied
+// node options.
+func DefaultNewNodeWithOptions(config *cfg.Config, logger log.Logger, options ...Option) (*Node, error) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load or gen node key %s: %w", config.NodeKeyFile(), err)
@@ -75,6 +81,7 @@ func DefaultNewNode(config *cfg.Config, logger log.Logger) (*Node, error) {
 		cfg.DefaultDBProvider,
 		DefaultMetricsProvider(config.Instrumentation),
 		logger,
+		options...,
 	)
 }
 

@@ -195,6 +195,31 @@ func TestGetNumTrueIndicesInvalidStates(t *testing.T) {
 	}
 }
 
+func TestGetIndexInvalidStates(t *testing.T) {
+	// A BitArray whose Bits exceeds the number of Elems is malformed but can be
+	// produced by FromProto from an untrusted proto message. GetIndex must
+	// return false for such inputs instead of panicking with an out-of-range
+	// Elems access, matching the guard already present in SetIndex.
+	testCases := []struct {
+		name string
+		bA   *BitArray
+		idx  int
+		exp  bool
+	}{
+		{"nil", nil, 0, false},
+		{"index past bits", NewBitArray(10), 10, false},
+		{"bits set but no elems", &BitArray{Bits: 100}, 64, false},
+		{"less elements than bits specifies", &BitArray{Bits: 200, Elems: make([]uint64, 1)}, 150, false},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NotPanics(t, func() {
+				require.Equal(t, tc.exp, tc.bA.GetIndex(tc.idx))
+			})
+		})
+	}
+}
+
 func TestGetNthTrueIndex(t *testing.T) {
 	type testcase struct {
 		Input          string

@@ -32,6 +32,8 @@
 - `[p2p]` fix `TestSwitchStopPeerForError` panicking on repeated runs
   with a duplicate Prometheus collector registration
   ([\#6132](https://github.com/cometbft/cometbft/pull/6132))
+- `[abci/client]` invoke the local client's response callback without holding the application mutex, so a callback that calls back into the client no longer deadlocks (as already fixed for the socket and gRPC clients)
+  ([\#6141](https://github.com/cometbft/cometbft/pull/6141))
 
 ### IMPROVEMENTS
 

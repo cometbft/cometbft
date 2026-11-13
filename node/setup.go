@@ -614,11 +614,19 @@ func (n *Node) performStateSync() error {
 		}
 	}
 
+	n.stateSyncWG.Add(1)
 	go func() {
+		defer n.stateSyncWG.Done()
 		state, commit, err := n.stateSyncReactor.Sync(n.stateSyncProvider, config.DiscoveryTime)
 		if err != nil {
 			logger.Error("State sync failed", "err", err)
 			return
+		}
+		// The node is shutting down: do not touch stores OnStop is about to close.
+		select {
+		case <-n.stateSyncReactor.Quit():
+			return
+		default:
 		}
 
 		err = n.stateStore.Bootstrap(state)

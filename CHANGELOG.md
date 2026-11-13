@@ -32,6 +32,8 @@
 - `[p2p]` fix `TestSwitchStopPeerForError` panicking on repeated runs
   with a duplicate Prometheus collector registration
   ([\#6132](https://github.com/cometbft/cometbft/pull/6132))
+- `[node]` stop the state sync goroutine when the node shuts down and wait for it in `OnStop` before the stores are closed, so it can no longer outlive the node or write to closed stores
+  ([\#6140](https://github.com/cometbft/cometbft/pull/6140))
 
 ### IMPROVEMENTS
 

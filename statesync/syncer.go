@@ -45,6 +45,8 @@ var (
 	errTimeout = errors.New("timed out waiting for chunk")
 	// errNoSnapshots is returned by SyncAny() if no snapshots are found and discovery is disabled.
 	errNoSnapshots = errors.New("no suitable snapshots found")
+	// errStopped is returned by SyncAny() when the syncer's context is canceled, i.e. the reactor was stopped.
+	errStopped = errors.New("state sync stopped")
 )
 
 // syncer runs a state sync against an ABCI app. Use either SyncAny() to automatically attempt to
@@ -59,6 +61,9 @@ type syncer struct {
 	tempDir       string
 	chunkFetchers int32
 	retryTimeout  time.Duration
+
+	// ctx is canceled when the owning reactor stops, aborting any in-flight discovery or restoration.
+	ctx context.Context
 
 	mtx    cmtsync.RWMutex
 	chunks *chunkQueue
@@ -82,6 +87,19 @@ func newSyncer(
 		tempDir:       tempDir,
 		chunkFetchers: cfg.ChunkFetchers,
 		retryTimeout:  cfg.ChunkRequestTimeout,
+		ctx:           context.Background(),
+	}
+}
+
+// sleep waits for d, returning false if the syncer's context is canceled first.
+func (s *syncer) sleep(d time.Duration) bool {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-t.C:
+		return true
+	case <-s.ctx.Done():
+		return false
 	}
 }
 
@@ -154,7 +172,9 @@ func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.Stat
 
 	if discoveryTime > 0 {
 		s.logger.Info("Discovering snapshots", "discoverTime", discoveryTime)
-		time.Sleep(discoveryTime)
+		if !s.sleep(discoveryTime) {
+			return sm.State{}, nil, errStopped
+		}
 	}
 
 	// The app may ask us to retry a snapshot restoration, in which case we need to reuse
@@ -165,6 +185,9 @@ func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.Stat
 		err      error
 	)
 	for {
+		if s.ctx.Err() != nil {
+			return sm.State{}, nil, errStopped
+		}
 		// If not nil, we're going to retry restoration of the same snapshot.
 		if snapshot == nil {
 			snapshot = s.snapshots.Best()
@@ -176,7 +199,9 @@ func (s *syncer) SyncAny(discoveryTime time.Duration, retryHook func()) (sm.Stat
 			}
 			retryHook()
 			s.logger.Info("sync any", "msg", log.NewLazySprintf("Discovering snapshots for %v", discoveryTime))
-			time.Sleep(discoveryTime)
+			if !s.sleep(discoveryTime) {
+				return sm.State{}, nil, errStopped
+			}
 			continue
 		}
 		if chunks == nil {
@@ -257,7 +282,7 @@ func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.
 		s.mtx.Unlock()
 	}()
 
-	hctx, cancel := context.WithTimeout(context.TODO(), 30*time.Second)
+	hctx, cancel := context.WithTimeout(s.ctx, 30*time.Second)
 	defer cancel()
 
 	appHash, err := s.stateProvider.AppHash(hctx, snapshot.Height)
@@ -277,13 +302,13 @@ func (s *syncer) Sync(snapshot *snapshot, chunks *chunkQueue) (sm.State, *types.
 	}
 
 	// Spawn chunk fetchers. They will terminate when the chunk queue is closed or context canceled.
-	fetchCtx, cancel := context.WithCancel(context.TODO())
+	fetchCtx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
 	for i := int32(0); i < s.chunkFetchers; i++ {
 		go s.fetchChunks(fetchCtx, snapshot, chunks)
 	}
 
-	pctx, pcancel := context.WithTimeout(context.TODO(), 30*time.Second)
+	pctx, pcancel := context.WithTimeout(s.ctx, 30*time.Second)
 	defer pcancel()
 
 	// Optimistically build new state, so we don't discover any light client failures at the end.

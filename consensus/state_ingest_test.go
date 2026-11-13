@@ -2,9 +2,11 @@ package consensus
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -12,6 +14,32 @@ import (
 	sm "github.com/cometbft/cometbft/state"
 	"github.com/cometbft/cometbft/types"
 )
+
+type ingestShutdownLogger struct {
+	log.Logger
+	internalMessageReceived chan struct{}
+	consensusFailure        chan struct{}
+	internalMessageOnce     sync.Once
+	consensusFailureOnce    sync.Once
+}
+
+func (l *ingestShutdownLogger) Debug(msg string, keyvals ...any) {
+	if msg == "Received message from cs.internalMsgQueue" {
+		l.internalMessageOnce.Do(func() { close(l.internalMessageReceived) })
+	}
+	l.Logger.Debug(msg, keyvals...)
+}
+
+func (l *ingestShutdownLogger) Error(msg string, keyvals ...any) {
+	if msg == "CONSENSUS FAILURE!!!" {
+		l.consensusFailureOnce.Do(func() { close(l.consensusFailure) })
+	}
+	l.Logger.Error(msg, keyvals...)
+}
+
+func (l *ingestShutdownLogger) With(keyvals ...any) log.Logger {
+	return l
+}
 
 func TestStateIngestVerifiedBlock(t *testing.T) {
 	t.Run("ingestedBlock", func(t *testing.T) {
@@ -112,6 +140,42 @@ func TestStateIngestVerifiedBlock(t *testing.T) {
 		require.ErrorContains(t, err, "unverified ingest candidate")
 	})
 
+}
+
+func TestStateIngestVerifiedBlockShutdown(t *testing.T) {
+	ts := newIngestTestSuite(t)
+	ic := ts.MakeIngestCandidate()
+
+	logger := &ingestShutdownLogger{
+		Logger:                  log.NewNopLogger(),
+		internalMessageReceived: make(chan struct{}),
+		consensusFailure:        make(chan struct{}),
+	}
+	ts.cs.SetLogger(logger)
+	ts.cs.doWALCatchup = false
+	require.NoError(t, ts.cs.Start())
+
+	ts.cs.mtx.Lock()
+	result := make(chan error, 1)
+	go func() {
+		result <- ts.cs.IngestVerifiedBlock(ic)
+	}()
+
+	select {
+	case <-logger.internalMessageReceived:
+	case <-time.After(time.Second):
+		t.Fatal("ingest request was not received")
+	}
+	require.NoError(t, ts.cs.Stop())
+	require.ErrorContains(t, <-result, "consensus shutdown")
+
+	ts.cs.mtx.Unlock()
+	ts.cs.Wait()
+	select {
+	case <-logger.consensusFailure:
+		t.Fatal("consensus panicked while sending the ingest response")
+	default:
+	}
 }
 
 func TestIngestCandidate(t *testing.T) {

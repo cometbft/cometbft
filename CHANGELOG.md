@@ -11,6 +11,8 @@
 - `[config]` render `bootstrap_peers` on its own line in the generated `config.toml`;
   template trim markers had joined it onto the preceding comment line, so TOML parsers ignored it
   ([\#6124](https://github.com/cometbft/cometbft/pull/6124))
+- `[libs/autofile]` unregister the SIGHUP handler in `AutoFile.Close` so a later SIGHUP no longer panics the process with "send on closed channel"
+  ([\#6067](https://github.com/cometbft/cometbft/pull/6067))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`
@@ -36,6 +38,8 @@
 ### FEATURES
 
 ### STATE-BREAKING
+
+- `[evidence]` fix block hash calculation ([\#6138](https://github.com/cometbft/cometbft/pull/6138))
 
 ### API-BREAKING
 

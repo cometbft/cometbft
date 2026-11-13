@@ -163,6 +163,7 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (numPruned int64, newRetain
 	if err != nil {
 		return 0, lastRetainHeight, err
 	}
+	defer itr.Close()
 	deleted := int64(0)
 	affectedHeights := make(map[int64]struct{})
 	for ; itr.Valid(); itr.Next() {

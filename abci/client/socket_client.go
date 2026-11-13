@@ -134,7 +134,10 @@ func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 			// N.B. We must enqueue before sending out the request, otherwise the
 			// server may reply before we do it, and the receiver will fail for an
 			// unsolicited reply.
-			cli.trackRequest(reqres)
+			if !cli.trackRequest(reqres) {
+				reqres.Done()
+				continue
+			}
 
 			err := types.WriteMessage(reqres.Request, w)
 			if err != nil {
@@ -157,6 +160,7 @@ func (cli *socketClient) sendRequestsRoutine(conn io.Writer) {
 				// Probably will fill the buffer, or retry later.
 			}
 		case <-cli.Quit():
+			cli.flushQueue()
 			return
 		}
 	}
@@ -191,16 +195,15 @@ func (cli *socketClient) recvResponseRoutine(conn io.Reader) {
 	}
 }
 
-func (cli *socketClient) trackRequest(reqres *ReqRes) {
-	// N.B. We must NOT hold the client state lock while checking this, or we
-	// may deadlock with shutdown.
-	if !cli.IsRunning() {
-		return
-	}
-
+func (cli *socketClient) trackRequest(reqres *ReqRes) bool {
 	cli.mtx.Lock()
 	defer cli.mtx.Unlock()
+	if !cli.IsRunning() {
+		reqres.setError(ErrClientStopped)
+		return false
+	}
 	cli.reqSent.PushBack(reqres)
+	return true
 }
 
 func (cli *socketClient) didRecvResponse(res *types.Response) error {
@@ -247,7 +250,10 @@ func (cli *socketClient) Flush(ctx context.Context) error {
 		return err
 	}
 	reqRes.Wait()
-	return nil
+	if err := reqRes.Error(); err != nil {
+		return err
+	}
+	return cli.Error()
 }
 
 func (cli *socketClient) Echo(ctx context.Context, msg string) (*types.ResponseEcho, error) {
@@ -438,13 +444,24 @@ func (cli *socketClient) FinalizeBlock(ctx context.Context, req *types.RequestFi
 }
 
 func (cli *socketClient) queueRequest(ctx context.Context, req *types.Request) (*ReqRes, error) {
+	if !cli.IsRunning() {
+		return nil, ErrClientStopped
+	}
+
 	reqres := NewReqRes(req)
 
-	// TODO: set cli.err if reqQueue times out
 	select {
 	case cli.reqQueue <- reqres:
 	case <-ctx.Done():
 		return nil, ctx.Err()
+	case <-cli.Quit():
+		return nil, ErrClientStopped
+	}
+
+	if !cli.IsRunning() {
+		reqres.setError(ErrClientStopped)
+		reqres.Done()
+		return nil, ErrClientStopped
 	}
 
 	// Maybe auto-flush, or unset auto-flush
@@ -463,11 +480,19 @@ func (cli *socketClient) queueRequest(ctx context.Context, req *types.Request) (
 func (cli *socketClient) flushQueue() {
 	cli.mtx.Lock()
 	defer cli.mtx.Unlock()
+	err := cli.err
+	if err == nil {
+		err = ErrClientStopped
+	}
 
-	// mark all in-flight messages as resolved (they will get cli.Error())
-	for req := cli.reqSent.Front(); req != nil; req = req.Next() {
+	// Mark all in-flight messages as resolved with the error that stopped them.
+	for req := cli.reqSent.Front(); req != nil; {
+		next := req.Next()
 		reqres := req.Value.(*ReqRes)
+		reqres.setError(err)
 		reqres.Done()
+		cli.reqSent.Remove(req)
+		req = next
 	}
 
 	// mark all queued messages as resolved
@@ -475,6 +500,7 @@ LOOP:
 	for {
 		select {
 		case reqres := <-cli.reqQueue:
+			reqres.setError(err)
 			reqres.Done()
 		default:
 			break LOOP

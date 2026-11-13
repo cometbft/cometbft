@@ -32,6 +32,8 @@
 - `[p2p]` fix `TestSwitchStopPeerForError` panicking on repeated runs
   with a duplicate Prometheus collector registration
   ([\#6132](https://github.com/cometbft/cometbft/pull/6132))
+  that were unset stay unset and ones set by the command don't leak into later runs
+  ([\#6131](https://github.com/cometbft/cometbft/pull/6131))
 
 ### IMPROVEMENTS
 

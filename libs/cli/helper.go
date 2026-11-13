@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -25,20 +26,22 @@ func WriteConfigVals(dir string, vals map[string]string) error {
 // and environmental variables set. It returns any error returned from cmd.Execute()
 func RunWithArgs(cmd Executable, args []string, env map[string]string) error {
 	oargs := os.Args
-	oenv := map[string]string{}
-	// defer returns the environment back to normal
+	// the command itself can set variables too (copyEnvVars turns DEMOFOO into DEMO_FOO),
+	// so restore the whole environment rather than only the keys in env
+	oenv := os.Environ()
 	defer func() {
 		os.Args = oargs
-		for k, v := range oenv {
-			os.Setenv(k, v)
+		os.Clearenv()
+		for _, kv := range oenv {
+			if k, v, ok := strings.Cut(kv, "="); ok {
+				os.Setenv(k, v)
+			}
 		}
 	}()
 
 	// set the args and env how we want them
 	os.Args = args
 	for k, v := range env {
-		// backup old value if there, to restore at end
-		oenv[k] = os.Getenv(k)
 		err := os.Setenv(k, v)
 		if err != nil {
 			return err

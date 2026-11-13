@@ -15,11 +15,16 @@ type mempoolIDs struct {
 }
 
 // Reserve searches for the next unused ID and assigns it to the
-// peer.
+// peer. It is idempotent: a peer that already holds an ID keeps it, so a
+// second connection with the same peer ID neither leaks a slot nor
+// replaces the mapping of the connection that is already in use.
 func (ids *mempoolIDs) ReserveForPeer(peer p2p.Peer) {
 	ids.mtx.Lock()
 	defer ids.mtx.Unlock()
 
+	if _, ok := ids.peerMap[peer.ID()]; ok {
+		return
+	}
 	curID := ids.nextPeerID()
 	ids.peerMap[peer.ID()] = curID
 	ids.activeIDs[curID] = struct{}{}

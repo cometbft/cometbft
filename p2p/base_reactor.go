@@ -25,9 +25,13 @@ type Reactor interface {
 	// InitPeer is called by the switch before the peer is started. Use it to
 	// initialize data for the peer (e.g. peer state).
 	//
-	// NOTE: The switch won't call AddPeer nor RemovePeer if it fails to start
-	// the peer. Do not store any data associated with the peer in the reactor
-	// itself unless you don't want to have a state, which is never cleaned up.
+	// NOTE: If the peer is not added after InitPeer (it fails to start, or the
+	// peer set rejects it), the switch calls RemovePeer without calling
+	// AddPeer, and the peer may not have been stopped yet. The exception is a
+	// rejected duplicate of a peer ID that is already connected: RemovePeer is
+	// not called then, because it would clear the state of the connected peer.
+	// InitPeer must therefore be idempotent for a given peer ID, and data
+	// stored in the reactor itself must be cleaned up in RemovePeer.
 	InitPeer(peer Peer) Peer
 
 	// AddPeer is called by the switch after the peer is added and successfully
@@ -35,7 +39,8 @@ type Reactor interface {
 	AddPeer(peer Peer)
 
 	// RemovePeer is called by the switch when the peer is stopped (due to error
-	// or other reason).
+	// or other reason), or when the switch fails to add a peer after InitPeer
+	// was called for it.
 	RemovePeer(peer Peer, reason any)
 
 	// Receive is called by the switch when an envelope is received from any connected

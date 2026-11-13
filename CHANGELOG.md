@@ -32,6 +32,8 @@
 - `[p2p]` fix `TestSwitchStopPeerForError` panicking on repeated runs
   with a duplicate Prometheus collector registration
   ([\#6132](https://github.com/cometbft/cometbft/pull/6132))
+  like the RPC and pprof listeners, instead of only logging the error
+  ([\#6130](https://github.com/cometbft/cometbft/pull/6130))
 
 ### IMPROVEMENTS
 

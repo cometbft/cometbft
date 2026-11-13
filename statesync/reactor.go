@@ -271,7 +271,19 @@ func (r *Reactor) Sync(stateProvider StateProvider, discoveryTime time.Duration)
 		return sm.State{}, nil, errors.New("a state sync is already in progress")
 	}
 	r.metrics.Syncing.Set(1)
-	r.syncer = newSyncer(r.cfg, r.Logger, r.conn, r.connQuery, stateProvider, r.tempDir)
+	// Abort the sync when the reactor is stopped, so that it cannot outlive the node.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		select {
+		case <-r.Quit():
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+	syncer := newSyncer(r.cfg, r.Logger, r.conn, r.connQuery, stateProvider, r.tempDir)
+	syncer.ctx = ctx
+	r.syncer = syncer
 	r.mtx.Unlock()
 
 	hook := func() {
@@ -286,7 +298,7 @@ func (r *Reactor) Sync(stateProvider StateProvider, discoveryTime time.Duration)
 
 	hook()
 
-	state, commit, err := r.syncer.SyncAny(discoveryTime, hook)
+	state, commit, err := syncer.SyncAny(discoveryTime, hook)
 
 	r.mtx.Lock()
 	r.syncer = nil

@@ -406,8 +406,11 @@ func (bs *BlockStore) PruneBlocks(height int64, state sm.State) (uint64, int64, 
 				return 0, -1, err
 			}
 		}
-		if err := batch.Delete(calcBlockHashKey(meta.BlockID.Hash)); err != nil {
-			return 0, -1, err
+		// the hash index points at the meta, so it stays as long as the meta does
+		if h < evidencePoint {
+			if err := batch.Delete(calcBlockHashKey(meta.BlockID.Hash)); err != nil {
+				return 0, -1, err
+			}
 		}
 		// if height is beyond the evidence point we don't delete the commit data
 		if h < evidencePoint {

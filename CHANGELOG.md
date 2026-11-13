@@ -30,6 +30,8 @@
 - `[p2p]` fix `TestSwitchStopPeerForError` panicking on repeated runs
   with a duplicate Prometheus collector registration
   ([\#6132](https://github.com/cometbft/cometbft/pull/6132))
+- `[store]` keep the block hash index for block metas retained in the evidence window when pruning
+  ([\#6109](https://github.com/cometbft/cometbft/pull/6109))
 
 ### IMPROVEMENTS
 

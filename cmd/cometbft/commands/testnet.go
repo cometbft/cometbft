@@ -95,6 +95,13 @@ Example:
 }
 
 func testnetFiles(*cobra.Command, []string) error {
+	if nValidators < 0 {
+		return fmt.Errorf("number of validators (--v) must not be negative, got %d", nValidators)
+	}
+	if nNonValidators < 0 {
+		return fmt.Errorf("number of non-validators (--n) must not be negative, got %d", nNonValidators)
+	}
+
 	if len(hostnames) > 0 && len(hostnames) != (nValidators+nNonValidators) {
 		return fmt.Errorf(
 			"testnet needs precisely %d hostnames (number of validators plus non-validators) if --hostname parameter is used",

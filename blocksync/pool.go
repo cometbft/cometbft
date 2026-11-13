@@ -129,6 +129,19 @@ func (pool *BlockPool) OnStart() error {
 	return nil
 }
 
+// OnStop implements service.Service by stopping and dropping all requesters,
+// so the blocks they hold are released once the pool is no longer used.
+func (pool *BlockPool) OnStop() {
+	pool.mtx.Lock()
+	defer pool.mtx.Unlock()
+
+	for _, r := range pool.requesters {
+		_ = r.Stop()
+	}
+	pool.requesters = make(map[int64]*bpRequester)
+	pool.numPending.Store(0)
+}
+
 // spawns requesters as needed
 func (pool *BlockPool) makeRequestersRoutine() {
 	for {
@@ -291,6 +304,9 @@ func (pool *BlockPool) PopRequest() {
 
 	r := pool.requesters[pool.height]
 	if r == nil {
+		if !pool.IsRunning() {
+			return // requesters are dropped in OnStop
+		}
 		panic(fmt.Sprintf("Expected requester to pop, got nothing at height %v", pool.height))
 	}
 	blockTime := r.getBlock().Time
@@ -582,6 +598,10 @@ func (pool *BlockPool) sortPeers() {
 func (pool *BlockPool) makeNextRequester(nextHeight int64) {
 	pool.mtx.Lock()
 	defer pool.mtx.Unlock()
+
+	if !pool.IsRunning() {
+		return
+	}
 
 	request := newBPRequester(pool, nextHeight)
 
@@ -986,7 +1006,8 @@ OUTER_LOOP:
 		for {
 			select {
 			case <-bpr.pool.Quit():
-				if err := bpr.Stop(); err != nil {
+				// The pool stops its requesters in OnStop.
+				if err := bpr.Stop(); err != nil && !errors.Is(err, service.ErrAlreadyStopped) {
 					bpr.Logger.Error("Error stopped requester", "err", err)
 				}
 				return

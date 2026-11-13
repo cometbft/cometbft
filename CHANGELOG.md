@@ -8,6 +8,10 @@
 
 ### BUG FIXES
 
+- `[blocksync]` release the block pool's requesters when the pool stops, so blocks
+  parked in them, or delivered late for in-flight requests, are no longer kept in
+  memory after the switch to consensus
+  ([\#6150](https://github.com/cometbft/cometbft/pull/6150))
 - `[libs/autofile]` unregister the SIGHUP handler in `AutoFile.Close` so a later SIGHUP no longer panics the process with "send on closed channel"
   ([\#6067](https://github.com/cometbft/cometbft/pull/6067))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking

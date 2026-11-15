@@ -14,6 +14,10 @@
   ([\#6139](https://github.com/cometbft/cometbft/pull/6139))
 - `[libs/autofile]` unregister the SIGHUP handler in `AutoFile.Close` so a later SIGHUP no longer panics the process with "send on closed channel"
   ([\#6067](https://github.com/cometbft/cometbft/pull/6067))
+- `[light/rpc]` check that `Tx`, `HeaderByHash`, `BlockByHash` and `Block` responses
+  match the requested hash or height, and that the returned tx is the one covered by the proof,
+  so a primary can no longer pass off a different tx, header or block as the one asked for
+  ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`

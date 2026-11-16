@@ -4,6 +4,7 @@ import (
 	"net"
 	"testing"
 
+	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/p2p/mock"
 	"github.com/stretchr/testify/assert"
 )
@@ -56,4 +57,25 @@ func TestMempoolIDsPanicsIfNodeRequestsOvermaxActiveIDs(t *testing.T) {
 		peer := mock.NewPeer(net.IP{127, 0, 0, 1})
 		ids.ReserveForPeer(peer)
 	})
+}
+
+func TestReactorAddPeerReservesIDReclaimedByEarlierConnection(t *testing.T) {
+	config := cfg.TestMempoolConfig()
+	config.Broadcast = false
+	memR := &Reactor{config: config, ids: newMempoolIDs()}
+	peer := mock.NewPeer(net.IP{127, 0, 0, 1})
+
+	// Two connections with the same peer ID are initialized and share one reservation. The
+	// first joins and disconnects before the second is added, which reclaims the ID.
+	memR.InitPeer(peer)
+	memR.InitPeer(peer)
+	memR.RemovePeer(peer, nil)
+	assert.Zero(t, memR.ids.GetForPeer(peer))
+
+	memR.AddPeer(peer)
+	assert.NotZero(t, memR.ids.GetForPeer(peer))
+	assert.Len(t, memR.ids.activeIDs, 2)
+
+	memR.RemovePeer(peer, nil)
+	assert.Len(t, memR.ids.activeIDs, 1)
 }

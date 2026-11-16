@@ -326,6 +326,10 @@ func (c *Client) Block(ctx context.Context, height *int64) (*ctypes.ResultBlock,
 		return nil, fmt.Errorf("blockID %X does not match with block %X",
 			bmH, bH)
 	}
+	if height != nil && res.Block.Height != *height {
+		return nil, fmt.Errorf("block height %d does not match requested height %d",
+			res.Block.Height, *height)
+	}
 
 	// Update the light client if we're behind.
 	l, err := c.updateLightClientIfNeededTo(ctx, &res.Block.Height)
@@ -359,6 +363,10 @@ func (c *Client) BlockByHash(ctx context.Context, hash []byte) (*ctypes.ResultBl
 	if bmH, bH := res.BlockID.Hash, res.Block.Hash(); !bytes.Equal(bmH, bH) {
 		return nil, fmt.Errorf("blockID %X does not match with block %X",
 			bmH, bH)
+	}
+	if bH := res.Block.Hash(); !bytes.Equal(bH, hash) {
+		return nil, fmt.Errorf("block hash %X does not match requested hash %X",
+			bH, hash)
 	}
 
 	// Update the light client if we're behind.
@@ -442,6 +450,10 @@ func (c *Client) HeaderByHash(ctx context.Context, hash cmtbytes.HexBytes) (*cty
 	if err := res.Header.ValidateBasic(); err != nil {
 		return nil, err
 	}
+	if hH := res.Header.Hash(); !bytes.Equal(hH, hash) {
+		return nil, fmt.Errorf("header hash %X does not match requested hash %X",
+			hH, hash)
+	}
 
 	lb, err := c.updateLightClientIfNeededTo(ctx, &res.Header.Height)
 	if err != nil {
@@ -481,6 +493,12 @@ func (c *Client) Tx(ctx context.Context, hash []byte, prove bool) (*ctypes.Resul
 	// Validate res.
 	if res.Height <= 0 {
 		return nil, errNegOrZeroHeight
+	}
+	if !bytes.Equal(res.Tx, res.Proof.Data) {
+		return nil, errors.New("tx does not match proof data")
+	}
+	if tH := res.Tx.Hash(); !bytes.Equal(tH, hash) {
+		return nil, fmt.Errorf("tx hash %X does not match requested hash %X", tH, hash)
 	}
 
 	// Update the light client if we're behind.

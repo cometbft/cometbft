@@ -623,6 +623,8 @@ func (a *addrBook) removeFromAllBuckets(ka *knownAddress) {
 	} else {
 		a.nOld--
 	}
+	// the address is in no bucket now; a later reinstate adds it back as new
+	ka.BucketType = bucketTypeNew
 	delete(a.addrLookup, ka.ID())
 }
 

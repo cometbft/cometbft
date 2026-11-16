@@ -4,10 +4,16 @@
 
 ### DEPENDENCIES
 
-- `[go]` Bump minimum Go version to 1.26.6 ([\#6060](https://github.com/cometbft/cometbft/pull/6060))
+- `[go]` Bump minimum Go version to 1.26.10 ([\#6114](https://github.com/cometbft/cometbft/pull/6114))
 
 ### BUG FIXES
 
+- `[abci/server]` close the responses channel when a socket connection ends so its `handleResponses` goroutine exits instead of leaking
+  ([\#6111](https://github.com/cometbft/cometbft/pull/6111))
+- `[cmd]` reject negative `--v` and `--n` counts in `cometbft testnet` with an error instead of panicking
+  ([\#6139](https://github.com/cometbft/cometbft/pull/6139))
+- `[libs/autofile]` unregister the SIGHUP handler in `AutoFile.Close` so a later SIGHUP no longer panics the process with "send on closed channel"
+  ([\#6067](https://github.com/cometbft/cometbft/pull/6067))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`
@@ -25,6 +31,9 @@
   instead of silently dropping the condition and widening the results to
   rows the query explicitly excludes
   ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
+- `[p2p]` fix `TestSwitchStopPeerForError` panicking on repeated runs
+  with a duplicate Prometheus collector registration
+  ([\#6132](https://github.com/cometbft/cometbft/pull/6132))
 
 ### IMPROVEMENTS
 
@@ -35,6 +44,8 @@
 ### FEATURES
 
 ### STATE-BREAKING
+
+- `[evidence]` fix block hash calculation ([\#6138](https://github.com/cometbft/cometbft/pull/6138))
 
 ### API-BREAKING
 

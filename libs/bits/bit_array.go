@@ -246,6 +246,10 @@ func (bA *BitArray) IsFull() bool {
 	bA.mtx.Lock()
 	defer bA.mtx.Unlock()
 
+	if len(bA.Elems) == 0 {
+		return true
+	}
+
 	// Check all elements except the last
 	for _, elem := range bA.Elems[:len(bA.Elems)-1] {
 		if (^elem) != 0 {
@@ -507,6 +511,12 @@ func (bA *BitArray) FromProto(protoBitArray *cmtprotobits.BitArray) {
 func (bA *BitArray) ValidateBasic() error {
 	if bA == nil {
 		return nil
+	}
+
+	// numElements rounds toward zero, so a small negative size would
+	// otherwise "match" an empty Elems slice.
+	if bA.Bits < 0 {
+		return fmt.Errorf("negative number of bits: %d", bA.Bits)
 	}
 
 	expectedElems := numElements(bA.Size())

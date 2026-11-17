@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"time"
 
@@ -19,9 +20,18 @@ const ProtocolIDPrefix = "/p2p/cometbft/1.0.0"
 // TimeoutStream is the timeout for a stream.
 const TimeoutStream = 10 * time.Second
 
+// streamReadIdleTimeout is how long StreamReadSized waits for the next bytes
+// of a frame before giving up on the peer. Overridden in tests.
+var streamReadIdleTimeout = TimeoutStream
+
 // MaxStreamSize is the global maximum size of a stream.
 // Protocols should configure their own maximum size.
 const MaxStreamSize = 4 * (1 << 20)
+
+// readChunkSize bounds how much payload is requested from the stream per read,
+// so the receive buffer grows with the bytes actually delivered rather than
+// with the size the peer declared in the header.
+const readChunkSize = 64 * (1 << 10)
 
 // ProtocolID returns the protocol ID for a given channel
 // Byte is used for compatibility with the original CometBFT implementation.
@@ -95,6 +105,17 @@ func StreamReadSized(s network.Stream, maxSize uint64) ([]byte, error) {
 		return nil, fmt.Errorf("stream is closed")
 	}
 
+	// A peer that stops sending mid-frame must not pin this goroutine (and
+	// the payload buffer) for as long as it keeps the stream open. The
+	// deadline is extended whenever data arrives, so it bounds idle time,
+	// not the total transfer.
+	extendDeadline := func() error {
+		return s.SetReadDeadline(time.Now().Add(streamReadIdleTimeout))
+	}
+	if err := extendDeadline(); err != nil {
+		return nil, errors.Wrap(err, "failed to set read deadline")
+	}
+
 	reader := bufio.NewReader(s)
 
 	// in bytes
@@ -113,7 +134,7 @@ func StreamReadSized(s network.Stream, maxSize uint64) ([]byte, error) {
 		return nil, errors.Errorf("payload is too large (got %d, max %d)", payloadSize, payloadLimit)
 	}
 
-	payload, err := readExactly(reader, payloadSize)
+	payload, err := readExactly(reader, payloadSize, extendDeadline)
 	if err != nil {
 		return nil, err
 	}
@@ -149,43 +170,40 @@ func StreamReadSizedClose(s network.Stream, maxSize uint64) (payload []byte, err
 	return payload, nil
 }
 
-// readExactly allocates & reads exactly $size bytes from the reader.
-func readExactly(r io.Reader, size uint64) ([]byte, error) {
-	var (
-		out       = make([]byte, size)
-		bytesRead uint64
-		n         int
-		err       error
-		eof       bool
-	)
+// readExactly reads exactly $size bytes from the reader. The buffer grows
+// with the bytes received, and onProgress is invoked after every read that
+// delivered data.
+func readExactly(r io.Reader, size uint64, onProgress func() error) ([]byte, error) {
+	out := make([]byte, 0, min(size, readChunkSize))
 
-	for {
-		n, err = r.Read(out[bytesRead:])
-		eof = errors.Is(err, io.EOF)
+	for bytesRead := uint64(0); bytesRead < size; {
+		want := min(size-bytesRead, readChunkSize)
+		out = slices.Grow(out, int(want))
 
+		n, err := r.Read(out[bytesRead : bytesRead+want])
 		bytesRead += uint64(n)
+		out = out[:bytesRead]
+
+		if n > 0 && onProgress != nil {
+			if err := onProgress(); err != nil {
+				return nil, errors.Wrap(err, "failed to extend read deadline")
+			}
+		}
 
 		switch {
-		case eof && bytesRead == size:
+		case errors.Is(err, io.EOF) && bytesRead == size:
 			// no more bytes to read and size matches => all good!
 			return out, nil
-		case eof && bytesRead != size:
+		case errors.Is(err, io.EOF):
 			// no more bytes to read, but size doesn't match => partial read
 			return nil, errors.Wrapf(err, "eof partial read (%d/%d bytes)", bytesRead, size)
 		case err != nil:
 			// just some error
 			return nil, errors.Wrapf(err, "failed to read payload (read %d/%d bytes)", bytesRead, size)
-		case bytesRead < size:
-			// not enough bytes to read => continue
-			continue
-		case bytesRead > size:
-			// should not happen
-			return nil, errors.Errorf("read more bytes than expected (%d/%d bytes)", bytesRead, size)
-		default:
-			// all good!
-			return out, nil
 		}
 	}
+
+	return out, nil
 }
 
 func closeStream(s network.Stream) error {

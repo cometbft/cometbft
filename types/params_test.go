@@ -271,3 +271,18 @@ func TestProto(t *testing.T) {
 
 	}
 }
+
+func TestConsensusParamsFromProtoMissingFields(t *testing.T) {
+	require.NotPanics(t, func() {
+		assert.Equal(t, ConsensusParams{}, ConsensusParamsFromProto(cmtproto.ConsensusParams{}))
+	})
+
+	full := makeParams(1, 2, 3, 1, valEd25519, 1, "")
+	pbParams := full.ToProto()
+	pbParams.Evidence = nil
+	pbParams.Version = nil
+	params := ConsensusParamsFromProto(pbParams)
+	assert.Equal(t, int64(1), params.Block.MaxBytes)
+	assert.Equal(t, EvidenceParams{}, params.Evidence)
+	assert.Equal(t, []string{ABCIPubKeyTypeEd25519}, params.Validator.PubKeyTypes)
+}

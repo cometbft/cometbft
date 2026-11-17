@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -72,6 +73,7 @@ type Node struct {
 	stateSyncReactor  *statesync.Reactor      // for hosting and restoring state sync snapshots
 	stateSyncProvider statesync.StateProvider // provides state data for bootstrapping a node
 	stateSyncGenesis  sm.State                // provides the genesis state for state sync
+	stateSyncWG       sync.WaitGroup          // tracks the goroutine started by performStateSync
 	consensusState    *cs.State               // latest consensus state
 	consensusReactor  *cs.Reactor             // for participating in the consensus
 	evidencePool      *evidence.Pool          // tracking evidence
@@ -759,6 +761,10 @@ func (n *Node) OnStop() {
 	if err := n.sw.Stop(); err != nil {
 		n.Logger.Error("Error closing switch", "err", err)
 	}
+
+	// The state sync goroutine is canceled by the stopped state sync reactor;
+	// wait for it before the stores are closed below.
+	n.stateSyncWG.Wait()
 
 	if mp, ok := n.transport.(*p2p.MultiplexTransport); ok {
 		if err := mp.Close(); err != nil {

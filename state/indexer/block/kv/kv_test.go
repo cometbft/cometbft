@@ -57,6 +57,40 @@ func TestBlockerIndexer_Prune(t *testing.T) {
 	require.True(t, emptyIntersection(keys1, keys3))
 }
 
+type batchCountingDB struct {
+	db.DB
+	batches int
+}
+
+func (c *batchCountingDB) NewBatch() db.Batch {
+	c.batches++
+	return c.DB.NewBatch()
+}
+
+// Prune walks every key in the store. Once the number of deleted keys reached
+// a multiple of 1000, it used to flush and open a new batch (deferring its
+// close) for every key that followed until the next delete.
+func TestBlockerIndexer_PruneFlushesOnlyAfterDeletes(t *testing.T) {
+	// Not MemDB: its iterator holds a read lock, so the in-loop flush
+	// deadlocks there.
+	pebble, err := db.NewDB("block", db.PebbleDBBackend, t.TempDir())
+	require.NoError(t, err)
+	defer pebble.Close()
+	store := &batchCountingDB{DB: pebble}
+	indexer := blockidxkv.New(store)
+	for h := int64(1); h <= 2000; h++ {
+		require.NoError(t, indexer.Index(getEventsForTesting(h)))
+	}
+
+	// Within a key prefix, heights sort in order: the first prefix yields
+	// exactly 1000 deletes (heights 1..1000) and then 1000 keys to keep.
+	store.batches = 0
+	_, retainedHeight, err := indexer.Prune(1001)
+	require.NoError(t, err)
+	require.Equal(t, int64(1001), retainedHeight)
+	require.Less(t, store.batches, 100, "a new batch was opened for keys that were not deleted")
+}
+
 func BenchmarkBlockerIndexer_Prune(_ *testing.B) {
 	config := test.ResetTestRoot("block_indexer")
 	defer func() {

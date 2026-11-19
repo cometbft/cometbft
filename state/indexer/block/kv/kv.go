@@ -163,6 +163,7 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (numPruned int64, newRetain
 	if err != nil {
 		return 0, lastRetainHeight, err
 	}
+	defer itr.Close()
 	deleted := int64(0)
 	affectedHeights := make(map[int64]struct{})
 	for ; itr.Valid(); itr.Next() {
@@ -174,14 +175,16 @@ func (idx *BlockerIndexer) Prune(retainHeight int64) (numPruned int64, newRetain
 			height := getHeightFromKey(itr.Key())
 			affectedHeights[height] = struct{}{}
 			deleted++
-		}
-		if deleted%1000 == 0 && deleted != 0 {
-			err = flush(batch)
-			if err != nil {
-				return 0, lastRetainHeight, err
+			// Flush only right after a delete; checking on every key flushed
+			// an empty batch and deferred a close for each key that followed.
+			if deleted%1000 == 0 {
+				err = flush(batch)
+				if err != nil {
+					return 0, lastRetainHeight, err
+				}
+				batch = idx.store.NewBatch()
+				defer closeBatch(batch)
 			}
-			batch = idx.store.NewBatch()
-			defer closeBatch(batch)
 		}
 	}
 

@@ -96,7 +96,7 @@ type Server struct {
 	// check if we have subscription before
 	// subscribing or unsubscribing
 	mtx           cmtsync.RWMutex
-	subscriptions map[string]map[string]struct{} // subscriber -> query (string) -> empty struct
+	subscriptions map[string]map[string]*Subscription // subscriber -> query (string) -> subscription
 }
 
 // Option sets a parameter for the server.
@@ -107,7 +107,7 @@ type Option func(*Server)
 // provided, the resulting server's queue is unbuffered.
 func NewServer(options ...Option) *Server {
 	s := &Server{
-		subscriptions: make(map[string]map[string]struct{}),
+		subscriptions: make(map[string]map[string]*Subscription),
 	}
 	s.BaseService = *service.NewBaseService(nil, "PubSub", s)
 
@@ -191,9 +191,9 @@ func (s *Server) subscribe(ctx context.Context, clientID string, query Query, ou
 		case <-subscription.Canceled():
 		default:
 			if _, ok = s.subscriptions[clientID]; !ok {
-				s.subscriptions[clientID] = make(map[string]struct{})
+				s.subscriptions[clientID] = make(map[string]*Subscription)
 			}
-			s.subscriptions[clientID][query.String()] = struct{}{}
+			s.subscriptions[clientID][query.String()] = subscription
 		}
 		s.mtx.Unlock()
 		return subscription, nil
@@ -367,10 +367,16 @@ func (s *Server) evict(state *state, subs []clientQuery) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	for _, sub := range subs {
+		// The client may have unsubscribed and subscribed to the same query
+		// while this publish was queued. Only drop the entry if it still
+		// belongs to the subscription being evicted.
+		evicted := state.subscriptions[sub.query][sub.clientID]
 		clientSubscriptions := s.subscriptions[sub.clientID]
-		delete(clientSubscriptions, sub.query)
-		if len(clientSubscriptions) == 0 {
-			delete(s.subscriptions, sub.clientID)
+		if clientSubscriptions[sub.query] == evicted {
+			delete(clientSubscriptions, sub.query)
+			if len(clientSubscriptions) == 0 {
+				delete(s.subscriptions, sub.clientID)
+			}
 		}
 		state.remove(sub.clientID, sub.query, ErrOutOfCapacity)
 	}

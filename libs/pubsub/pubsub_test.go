@@ -534,3 +534,65 @@ func TestSlowClientCanResubscribeAfterErrOutOfCapacity(t *testing.T) {
 	require.NoError(t, s.Publish(ctx, "Hulk"))
 	assertReceive(t, "Hulk", subscription.Out())
 }
+
+func TestEvictionKeepsReplacementSubscription(t *testing.T) {
+	// Commands queue up until the server starts, so their order is fixed.
+	s := pubsub.NewServer(pubsub.BufferCapacity(10))
+	s.SetLogger(log.TestingLogger())
+
+	ctx := context.Background()
+	_, err := s.Subscribe(ctx, clientID, query.All, 1)
+	require.NoError(t, err)
+	require.NoError(t, s.Publish(ctx, "Fat Cobra"))
+	// Overflows the first subscription, which gets evicted after the
+	// client has already replaced it below.
+	require.NoError(t, s.Publish(ctx, "Viper"))
+	require.NoError(t, s.Unsubscribe(ctx, clientID, query.All))
+	_, err = s.Subscribe(ctx, clientID, query.All, 1)
+	require.NoError(t, err)
+
+	barrier, err := s.Subscribe(ctx, "barrier", query.All)
+	require.NoError(t, err)
+	require.NoError(t, s.Publish(ctx, "Hulk"))
+
+	require.NoError(t, s.Start())
+	t.Cleanup(func() {
+		if err := s.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+	// "Hulk" reaches the barrier only after every queued command ran.
+	assertReceive(t, "Hulk", barrier.Out())
+
+	// The replacement subscription must still be tracked.
+	assert.Equal(t, 1, s.NumClientSubscriptions(clientID))
+	require.NoError(t, s.Unsubscribe(ctx, clientID, query.All))
+}
+
+func TestSubscriptionEvictedBeforeRegistrationIsNotTracked(t *testing.T) {
+	s := pubsub.NewServer()
+	s.SetLogger(log.TestingLogger())
+	require.NoError(t, s.Start())
+	t.Cleanup(func() {
+		if err := s.Stop(); err != nil {
+			t.Error(err)
+		}
+	})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	// Keep publishing so new subscriptions overflow right away, sometimes
+	// before Subscribe has registered them.
+	go func() {
+		for ctx.Err() == nil {
+			_ = s.Publish(ctx, "Fat Cobra")
+		}
+	}()
+
+	for i := 0; i < 1000; i++ {
+		subscription, err := s.Subscribe(ctx, clientID, query.All, 1)
+		require.NoError(t, err)
+		<-subscription.Canceled()
+		require.Zero(t, s.NumClientSubscriptions(clientID), "iteration %d", i)
+	}
+}

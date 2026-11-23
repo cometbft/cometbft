@@ -2,6 +2,13 @@
 
 This guide provides instructions for upgrading to specific versions of CometBFT.
 
+## Unreleased
+
+CometBFT now requires Go 1.25 or later, the minimum the patched gRPC
+releases support. Release binaries are built with Go 1.26. Validators should
+switch Go versions at a coordinated upgrade height so that every node runs
+binaries built with the same Go version.
+
 ## v0.38.13
 
 It is recommended that CometBFT be built with Go v1.22+ since v1.21 is no longer

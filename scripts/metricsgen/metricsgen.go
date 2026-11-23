@@ -155,7 +155,7 @@ func ignoreTestFiles(f fs.FileInfo) bool {
 // struct and builds a TemplateData using the data obtained from the abstract syntax tree.
 func ParseMetricsDir(dir string, structName string) (TemplateData, error) {
 	fs := token.NewFileSet()
-	d, err := parser.ParseDir(fs, dir, ignoreTestFiles, parser.ParseComments)
+	d, err := parser.ParseDir(fs, dir, ignoreTestFiles, parser.ParseComments) //nolint:staticcheck // metrics files use no build tags
 	if err != nil {
 		return TemplateData{}, err
 	}

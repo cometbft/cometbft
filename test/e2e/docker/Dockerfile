@@ -2,6 +2,8 @@
 # Stage 1: Build environment - compiles the application and test node
 FROM cometbft/cometbft-db-testing:v0.14.2 AS build
 
+ENV GOTOOLCHAIN=go1.26.10
+
 WORKDIR /src/cometbft
 
 # Copy Go module files and download dependencies

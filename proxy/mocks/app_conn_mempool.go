@@ -6,7 +6,6 @@ import (
 	context "context"
 
 	abcicli "github.com/cometbft/cometbft/abci/client"
-
 	mock "github.com/stretchr/testify/mock"
 
 	types "github.com/cometbft/cometbft/abci/types"

@@ -45,7 +45,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	golang.org/x/crypto v0.59.0
 	golang.org/x/crypto/openpgp v0.1.0-deprecated
-	golang.org/x/net v0.62.0
+	golang.org/x/net v0.63.0
 	golang.org/x/sync v0.25.0
 	gonum.org/v1/gonum v0.17.0
 	google.golang.org/grpc v1.82.1

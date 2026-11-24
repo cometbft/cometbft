@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"slices"
 	"sort"
 	"strings"
 
@@ -489,22 +490,19 @@ func verifyUpdates(
 	vals *ValidatorSet,
 	removedPower int64,
 ) (tvpAfterUpdatesBeforeRemovals int64, err error) {
-	delta := func(update *Validator, vals *ValidatorSet) int64 {
-		_, val := vals.GetByAddressMut(update.Address)
-		if val != nil {
-			return update.VotingPower - val.VotingPower
+	// Resolve each power change once instead of looking up validators during sorting.
+	deltas := make([]int64, len(updates))
+	for i, update := range updates {
+		deltas[i] = update.VotingPower
+		if _, val := vals.GetByAddressMut(update.Address); val != nil {
+			deltas[i] -= val.VotingPower
 		}
-		return update.VotingPower
 	}
-
-	updatesCopy := validatorListCopy(updates)
-	sort.Slice(updatesCopy, func(i, j int) bool {
-		return delta(updatesCopy[i], vals) < delta(updatesCopy[j], vals)
-	})
+	slices.Sort(deltas)
 
 	tvpAfterRemovals := vals.TotalVotingPower() - removedPower
-	for _, upd := range updatesCopy {
-		tvpAfterRemovals += delta(upd, vals)
+	for _, delta := range deltas {
+		tvpAfterRemovals += delta
 		if tvpAfterRemovals > MaxTotalVotingPower {
 			return 0, ErrTotalVotingPowerOverflow
 		}

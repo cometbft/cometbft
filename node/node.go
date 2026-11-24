@@ -676,7 +676,11 @@ func (n *Node) OnStart() error {
 
 	// begin prometheus metrics gathering if it is enabled
 	if n.config.Instrumentation.IsPrometheusEnabled() {
-		prometheusSrv = n.startPrometheusServer()
+		var err error
+		prometheusSrv, err = n.startPrometheusServer()
+		if err != nil {
+			return err
+		}
 	}
 
 	// Start the RPC server before the P2P server
@@ -987,9 +991,12 @@ func (n *Node) startRPC() ([]net.Listener, error) {
 
 // startPrometheusServer starts a Prometheus HTTP server, listening for metrics
 // collectors on addr.
-func (n *Node) startPrometheusServer() *http.Server {
+func (n *Node) startPrometheusServer() (*http.Server, error) {
+	ln, err := net.Listen("tcp", n.config.Instrumentation.PrometheusListenAddr)
+	if err != nil {
+		return nil, fmt.Errorf("prometheus HTTP server failed to listen: %w", err)
+	}
 	srv := &http.Server{
-		Addr: n.config.Instrumentation.PrometheusListenAddr,
 		Handler: promhttp.InstrumentMetricHandler(
 			prometheus.DefaultRegisterer, promhttp.HandlerFor(
 				prometheus.DefaultGatherer,
@@ -999,12 +1006,11 @@ func (n *Node) startPrometheusServer() *http.Server {
 		ReadHeaderTimeout: readHeaderTimeout,
 	}
 	go func() {
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			// Error starting or closing listener:
-			n.Logger.Error("Prometheus HTTP server ListenAndServe", "err", err)
+		if err := srv.Serve(ln); err != http.ErrServerClosed {
+			n.Logger.Error("Prometheus HTTP server Serve", "err", err)
 		}
 	}()
-	return srv
+	return srv, nil
 }
 
 // starts a ppro

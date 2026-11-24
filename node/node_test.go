@@ -155,6 +155,25 @@ func TestPprofServer(t *testing.T) {
 	assert.Equal(t, 200, resp.StatusCode)
 }
 
+func TestPrometheusServerBindFailure(t *testing.T) {
+	config := newNodeTestConfig(t, "node_prometheus_bind_test")
+	defer os.RemoveAll(config.RootDir)
+
+	occupied, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer occupied.Close()
+	config.Instrumentation.Prometheus = true
+	config.Instrumentation.PrometheusListenAddr = occupied.Addr().String()
+
+	n, err := DefaultNewNode(config, log.TestingLogger())
+	require.NoError(t, err)
+	err = n.Start()
+	if err == nil {
+		_ = n.Stop()
+	}
+	require.ErrorContains(t, err, "prometheus HTTP server failed to listen")
+}
+
 func TestNodeSetPrivValTCP(t *testing.T) {
 	addr := "tcp://" + testFreeAddr(t)
 

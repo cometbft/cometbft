@@ -184,6 +184,9 @@ func BootstrapStateWithGenProvider(ctx context.Context, config *cfg.Config, dbPr
 		dbProvider = cfg.DefaultDBProvider
 	}
 	blockStore, stateDB, err := initDBs(config, dbProvider)
+	if err != nil {
+		return err
+	}
 
 	defer func() {
 		if derr := blockStore.Close(); derr != nil {
@@ -192,10 +195,6 @@ func BootstrapStateWithGenProvider(ctx context.Context, config *cfg.Config, dbPr
 			err = derr
 		}
 	}()
-
-	if err != nil {
-		return err
-	}
 
 	if !blockStore.IsEmpty() {
 		return fmt.Errorf("blockstore not empty, trying to initialize non empty state")

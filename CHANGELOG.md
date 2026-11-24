@@ -12,6 +12,10 @@
   ([\#6111](https://github.com/cometbft/cometbft/pull/6111))
 - `[cmd]` reject negative `--v` and `--n` counts in `cometbft testnet` with an error instead of panicking
   ([\#6139](https://github.com/cometbft/cometbft/pull/6139))
+- `[consensus]` a proposer restarted after signing a proposal and before its block committed no longer
+  rejects its own proposal ("invalid proposal signature") and loses the round: the timestamp the signer
+  returns with a reused signature is now kept
+  ([\#6167](https://github.com/cometbft/cometbft/pull/6167))
 - `[libs/autofile]` unregister the SIGHUP handler in `AutoFile.Close` so a later SIGHUP no longer panics the process with "send on closed channel"
   ([\#6067](https://github.com/cometbft/cometbft/pull/6067))
 - `[p2p]` fix a node evicting a connected peer from its peer set, and then redialing it without

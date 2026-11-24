@@ -326,15 +326,15 @@ func (evpool *Pool) removePendingEvidence(evidence types.Evidence) {
 }
 
 // markEvidenceAsCommitted processes all the evidence in the block, marking it as
-// committed and removing it from the pending database.
+// committed and removing it from the pending database. Both writes go into a
+// single batch: if it fails the evidence stays pending rather than vanishing
+// from both keyspaces and being accepted again as new.
 func (evpool *Pool) markEvidenceAsCommitted(evidence types.EvidenceList) {
 	blockEvidenceMap := make(map[string]struct{}, len(evidence))
-	for _, ev := range evidence {
-		if evpool.isPending(ev) {
-			evpool.removePendingEvidence(ev)
-			blockEvidenceMap[evMapKey(ev)] = struct{}{}
-		}
+	batch := evpool.evidenceStore.NewBatch()
+	defer batch.Close()
 
+	for _, ev := range evidence {
 		// Add evidence to the committed list. As the evidence is stored in the block store
 		// we only need to record the height that it was saved at.
 		key := keyCommitted(ev)
@@ -346,9 +346,27 @@ func (evpool *Pool) markEvidenceAsCommitted(evidence types.EvidenceList) {
 			continue
 		}
 
-		if err := evpool.evidenceStore.Set(key, evBytes); err != nil {
+		if err := batch.Set(key, evBytes); err != nil {
 			evpool.logger.Error("Unable to save committed evidence", "err", err, "key(height/hash)", key)
+			continue
 		}
+
+		if evpool.isPending(ev) {
+			if err := batch.Delete(keyPending(ev)); err != nil {
+				evpool.logger.Error("Unable to delete pending evidence", "err", err)
+				continue
+			}
+			blockEvidenceMap[evMapKey(ev)] = struct{}{}
+		}
+	}
+
+	if err := batch.WriteSync(); err != nil {
+		evpool.logger.Error("Unable to persist committed evidence, keeping it pending", "err", err)
+		return
+	}
+
+	for range blockEvidenceMap {
+		atomic.AddUint32(&evpool.evidenceSize, ^uint32(0))
 	}
 
 	// remove committed evidence from the clist

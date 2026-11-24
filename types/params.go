@@ -405,22 +405,22 @@ func (params *ConsensusParams) ToProto() cmtproto.ConsensusParams {
 }
 
 func ConsensusParamsFromProto(pbParams cmtproto.ConsensusParams) ConsensusParams {
-	c := ConsensusParams{
-		Block: BlockParams{
-			MaxBytes: pbParams.Block.MaxBytes,
-			MaxGas:   pbParams.Block.MaxGas,
-		},
-		Evidence: EvidenceParams{
-			MaxAgeNumBlocks: pbParams.Evidence.MaxAgeNumBlocks,
-			MaxAgeDuration:  pbParams.Evidence.MaxAgeDuration,
-			MaxBytes:        pbParams.Evidence.MaxBytes,
-		},
-		Validator: ValidatorParams{
-			PubKeyTypes: pbParams.Validator.PubKeyTypes,
-		},
-		Version: VersionParams{
-			App: pbParams.Version.App,
-		},
+	// all sub-messages are optional in the proto, missing ones are left as zero values
+	c := ConsensusParams{}
+	if pbParams.Block != nil {
+		c.Block.MaxBytes = pbParams.Block.MaxBytes
+		c.Block.MaxGas = pbParams.Block.MaxGas
+	}
+	if pbParams.Evidence != nil {
+		c.Evidence.MaxAgeNumBlocks = pbParams.Evidence.MaxAgeNumBlocks
+		c.Evidence.MaxAgeDuration = pbParams.Evidence.MaxAgeDuration
+		c.Evidence.MaxBytes = pbParams.Evidence.MaxBytes
+	}
+	if pbParams.Validator != nil {
+		c.Validator.PubKeyTypes = pbParams.Validator.PubKeyTypes
+	}
+	if pbParams.Version != nil {
+		c.Version.App = pbParams.Version.App
 	}
 	if pbParams.Abci != nil {
 		c.ABCI.VoteExtensionsEnableHeight = pbParams.Abci.GetVoteExtensionsEnableHeight()

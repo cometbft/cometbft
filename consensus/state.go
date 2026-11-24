@@ -1276,6 +1276,10 @@ func (cs *State) defaultDecideProposal(height int64, round int32) {
 	p := proposal.ToProto()
 	if err := cs.privValidator.SignProposal(cs.state.ChainID, p); err == nil {
 		proposal.Signature = p.Signature
+		// A signer re-signing at the same height/round/step (e.g. after a
+		// restart) may return its earlier signature together with the
+		// earlier timestamp it covers: take both.
+		proposal.Timestamp = p.Timestamp
 
 		// send proposal and block parts on internal msg queue
 		cs.sendInternalMessage(msgInfo{&ProposalMessage{proposal}, ""})

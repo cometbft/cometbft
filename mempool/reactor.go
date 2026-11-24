@@ -102,6 +102,10 @@ func (memR *Reactor) GetChannels() []*p2p.ChannelDescriptor {
 // AddPeer implements Reactor.
 // It starts a broadcast routine ensuring all txs are forwarded to the given peer.
 func (memR *Reactor) AddPeer(peer p2p.Peer) {
+	// Another connection with the same peer ID may have shared this one's reservation and
+	// reclaimed it on disconnect before this connection was added, so reserve again (a
+	// no-op when the ID is still held).
+	memR.ids.ReserveForPeer(peer)
 	if memR.config.Broadcast {
 		go func() {
 			// Always forward transactions to unconditional peers.

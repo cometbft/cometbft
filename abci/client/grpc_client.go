@@ -2,6 +2,7 @@ package abcicli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"sync"
@@ -17,6 +18,8 @@ import (
 
 var _ Client = (*grpcClient)(nil)
 
+var errClientStopped = errors.New("abci.grpcClient is stopped")
+
 // A stripped copy of the remoteClient that makes
 // synchronous calls using grpc
 type grpcClient struct {
@@ -26,6 +29,11 @@ type grpcClient struct {
 	client   types.ABCIClient
 	conn     *grpc.ClientConn
 	chReqRes chan *ReqRes // dispatches "async" responses to callbacks *in order*, needed by mempool
+
+	// chMtx guards closing chReqRes against concurrent sends: senders hold the
+	// read lock while sending, OnStop takes the write lock to close it.
+	chMtx    sync.RWMutex
+	chClosed bool
 
 	mtx   sync.Mutex
 	addr  string
@@ -119,7 +127,11 @@ func (cli *grpcClient) OnStop() {
 	if cli.conn != nil {
 		cli.conn.Close()
 	}
+
+	cli.chMtx.Lock()
+	cli.chClosed = true
 	close(cli.chReqRes)
+	cli.chMtx.Unlock()
 }
 
 func (cli *grpcClient) StopForError(err error) {
@@ -161,16 +173,23 @@ func (cli *grpcClient) CheckTxAsync(ctx context.Context, req *types.RequestCheck
 		cli.StopForError(err)
 		return nil, err
 	}
-	return cli.finishAsyncCall(types.ToRequestCheckTx(req), &types.Response{Value: &types.Response_CheckTx{CheckTx: res}}), nil
+	return cli.finishAsyncCall(types.ToRequestCheckTx(req), &types.Response{Value: &types.Response_CheckTx{CheckTx: res}})
 }
 
 // finishAsyncCall creates a ReqRes for an async call, and immediately populates it
 // with the response. We don't complete it until it's been ordered via the channel.
-func (cli *grpcClient) finishAsyncCall(req *types.Request, res *types.Response) *ReqRes {
+// It returns an error if the client has been stopped.
+func (cli *grpcClient) finishAsyncCall(req *types.Request, res *types.Response) (*ReqRes, error) {
 	reqres := NewReqRes(req)
 	reqres.Response = res
+
+	cli.chMtx.RLock()
+	defer cli.chMtx.RUnlock()
+	if cli.chClosed {
+		return nil, errClientStopped
+	}
 	cli.chReqRes <- reqres // use channel for async responses, since they must be ordered
-	return reqres
+	return reqres, nil
 }
 
 //----------------------------------------

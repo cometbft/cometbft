@@ -309,13 +309,13 @@ func (txi *TxIndex) Search(ctx context.Context, q *query.Query) ([]*abci.TxResul
 	resultMap := make(map[string]struct{})
 RESULTS_LOOP:
 	for _, h := range filteredHashes {
-
-		res, err := txi.Get(h)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get Tx{%X}: %w", h, err)
-		}
 		hashString := string(h)
 		if _, ok := resultMap[hashString]; !ok {
+			// Multiple matching events can refer to the same transaction.
+			res, err := txi.Get(h)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get Tx{%X}: %w", h, err)
+			}
 			resultMap[hashString] = struct{}{}
 			results = append(results, res)
 		}

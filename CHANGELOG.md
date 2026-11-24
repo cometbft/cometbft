@@ -20,6 +20,11 @@
   ([\#6101](https://github.com/cometbft/cometbft/issues/6101))
 - `[rpc]` reject out-of-range `/genesis_chunked` indices that wrap to a negative int instead of panicking
   ([\#6070](https://github.com/cometbft/cometbft/pull/6070))
+- `[rpc/jsonrpc/client]` pair the responses of a batch request with their requests by
+  JSON-RPC ID rather than by their position in the response array, so a server that
+  answers a batch out of order can no longer have one request's result decoded into
+  another request's result object
+  ([\#PENDING](https://github.com/cometbft/cometbft/pull/PENDING))
 - `[lp2p]` size the system-wide connection limit in custom limits mode from `max_peers` instead of `max_peer_streams`
   ([\#6074](https://github.com/cometbft/cometbft/pull/6074))
 - `[lp2p]` fix flaky MsgBytesFilter test by avoiding broadcast race

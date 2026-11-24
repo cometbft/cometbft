@@ -50,6 +50,8 @@ func unmarshalMultipleResponses(responseBytes []byte) ([]types.RPCResponse, erro
 	return responses, err
 }
 
+// expectedIDs and results must be index-aligned: expectedIDs[i] is the ID of
+// the request whose response belongs in results[i].
 func unmarshalResponseBytesArray(
 	responseBytes []byte,
 	expectedIDs []types.JSONRPCIntID,
@@ -72,21 +74,26 @@ func unmarshalResponseBytesArray(
 			)
 		}
 
-		// Intersect IDs from responses with expectedIDs.
-		ids := make([]types.JSONRPCIntID, len(responses))
-		var ok bool
+		// A server may return the responses of a batch in any order, so pair
+		// each one with the result object belonging to its ID. Consuming the
+		// entry also rejects a repeated or unsolicited ID.
+		resultByID := make(map[types.JSONRPCIntID]any, len(results))
+		for i, result := range results {
+			resultByID[expectedIDs[i]] = result
+		}
+
 		for i, resp := range responses {
-			ids[i], ok = resp.ID.(types.JSONRPCIntID)
+			id, ok := resp.ID.(types.JSONRPCIntID)
 			if !ok {
 				return nil, fmt.Errorf("expected JSONRPCIntID, got %T", resp.ID)
 			}
-		}
-		if err := validateResponseIDs(ids, expectedIDs); err != nil {
-			return nil, fmt.Errorf("wrong IDs: %w", err)
-		}
+			result, ok := resultByID[id]
+			if !ok {
+				return nil, fmt.Errorf("wrong IDs: unsolicited ID #%d: %v", i, id)
+			}
+			delete(resultByID, id)
 
-		for i := 0; i < len(responses); i++ {
-			if err := cmtjson.Unmarshal(responses[i].Result, results[i]); err != nil {
+			if err := cmtjson.Unmarshal(resp.Result, result); err != nil {
 				return nil, fmt.Errorf("error unmarshalling #%d result: %w", i, err)
 			}
 		}
@@ -107,23 +114,6 @@ func unmarshalResponseBytesArray(
 		singleResult = append(singleResult, singleResponse.Result)
 	}
 	return singleResult, nil
-}
-
-func validateResponseIDs(ids, expectedIDs []types.JSONRPCIntID) error {
-	m := make(map[types.JSONRPCIntID]bool, len(expectedIDs))
-	for _, expectedID := range expectedIDs {
-		m[expectedID] = true
-	}
-
-	for i, id := range ids {
-		if m[id] {
-			delete(m, id)
-		} else {
-			return fmt.Errorf("unsolicited ID #%d: %v", i, id)
-		}
-	}
-
-	return nil
 }
 
 // From the JSON-RPC 2.0 spec:

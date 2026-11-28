@@ -190,3 +190,31 @@ func TestPeerSetGet(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+// removalFlagPeer is a mockPeer that keeps the removal flag, as a real peer does.
+type removalFlagPeer struct {
+	*mockPeer
+	removalFailed bool
+}
+
+func (p *removalFlagPeer) SetRemovalFailed()      { p.removalFailed = true }
+func (p *removalFlagPeer) GetRemovalFailed() bool { return p.removalFailed }
+
+func TestPeerSetRemoveKeepsAnotherPeerWithTheSameID(t *testing.T) {
+	t.Parallel()
+
+	peerSet := NewPeerSet()
+	winner := &removalFlagPeer{mockPeer: newMockPeer(net.IP{127, 0, 0, 1})}
+	loser := &removalFlagPeer{mockPeer: &mockPeer{ip: winner.ip, id: winner.id}}
+	assert.NoError(t, peerSet.Add(winner))
+
+	// The loser of a race to be added is removed while the winner is in the set.
+	assert.False(t, peerSet.Remove(loser), "a peer not in the set was removed")
+	assert.Same(t, winner, peerSet.Get(winner.ID()), "the winner left the set")
+	assert.Equal(t, 1, peerSet.Size())
+
+	// Once the winner is gone, the stopped loser must still not be added.
+	assert.True(t, peerSet.Remove(winner))
+	assert.Error(t, peerSet.Add(loser), "a peer whose removal was attempted was added")
+	assert.Equal(t, 0, peerSet.Size())
+}

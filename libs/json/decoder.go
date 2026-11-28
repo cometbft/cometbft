@@ -15,6 +15,7 @@ func Unmarshal(bz []byte, v any) error {
 }
 
 func decode(bz []byte, v any) error {
+	bz = bytes.Trim(bz, " \t\r\n")
 	if len(bz) == 0 {
 		return errors.New("cannot decode empty bytes")
 	}

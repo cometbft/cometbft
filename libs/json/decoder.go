@@ -168,7 +168,7 @@ func decodeReflectMap(bz []byte, rv reflect.Value) error {
 		if err := decodeReflect(bz, value); err != nil {
 			return err
 		}
-		rv.SetMapIndex(reflect.ValueOf(key), value)
+		rv.SetMapIndex(reflect.ValueOf(key).Convert(rv.Type().Key()), value)
 	}
 	return nil
 }

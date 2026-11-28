@@ -8,6 +8,8 @@
 
 ### BUG FIXES
 
+- `[libs/json]` preserve defined string key types when decoding maps
+  ([\#6142](https://github.com/cometbft/cometbft/issues/6142))
 - `[abci/server]` close the responses channel when a socket connection ends so its `handleResponses` goroutine exits instead of leaking
   ([\#6111](https://github.com/cometbft/cometbft/pull/6111))
 - `[cmd]` reject negative `--v` and `--n` counts in `cometbft testnet` with an error instead of panicking
